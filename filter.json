@@ -1,0 +1,30 @@
+{
+    ".or": [
+        {
+            "message_type": "private",
+            "user_id": {
+                ".in": [
+                    123456,
+                    233333
+                ]
+            }
+        },
+        {
+            "message_type": "group",
+            "group_id": {
+                ".in": [
+                    114514
+                ]
+            }
+        },
+        {
+            "post_type": "notice",
+            "notice_type": {
+                ".in": [
+                    "friend_recall",
+                    "group_recall"
+                ]
+            }
+        }
+    ]
+}
