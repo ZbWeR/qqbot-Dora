@@ -25,6 +25,8 @@
 .
 │  api.py           // 机器人功能模块
 │  main.py          // 监听端口并调用功能模块
+│  weather.py       // 天气预报模块
+│  openChat.py      // AI对话模块
 │  config.yml       // go-cqhttp配置文件参考
 └─ fliter.json      // 事件过滤器参考: 实现只接收特定群聊和个人的消息,以及撤回类型的消息
 ```

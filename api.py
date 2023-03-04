@@ -163,7 +163,7 @@ def setu(tag):
     theUrl = data[0].get('urls').get('original')
     return '[CQ:image,file={0},subType=0,url={1}]'.format('fbekjqdnl1.image',theUrl)
 
-WeaGroup = [654475543]
+WeaGroup = [654475543,182103094,749153468]
 weaSet = ['07','00']
 
 def autoWea(timeStamp):
