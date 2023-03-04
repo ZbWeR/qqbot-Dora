@@ -7,7 +7,6 @@ app = Flask(__name__)
 # '''监听端口，获取QQ信息'''
 @app.route('/', methods=["POST"]) 
 def post_data():
-    # print(request.get_json(),end='\n#####\n')
     requText = request.get_json()
     mid = requText.get('message_id')
     if requText.get('post_type') == 'message':
@@ -25,8 +24,9 @@ def post_data():
     elif requText.get('post_type') == 'notice':
         # print(requText)
         api.recallFun(mid)
+    elif requText.get('post_type') == 'meta_event':
+        api.autoWea(requText.get('time'))
     return 'OK'
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=5701)
