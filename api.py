@@ -2,6 +2,7 @@ import requests
 from urllib import parse
 import openChat
 import weather
+import randPic
 import time
 
 baseUrl = 'http://127.0.0.1:5700/'
@@ -66,12 +67,12 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
         send_msg('预设成功🏃',uid,gid)
     # 随机图片相关
     elif message[1:4]=='pic':
-        tmpMes = randPic()
+        tmpMes = randPic.normal()
         send_msg(tmpMes,uid,gid) 
     elif message[1:5]=='setu':
-        tag = message.replace('~setu','').lstrip()
-        tmpMes = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(mid,uid) +setu(tag)
+        tmpMes = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(mid,uid) + randPic.setu(message)
         send_msg(tmpMes,uid,gid)
+    # 功能信息
     elif message[1:7]=='status':
         allSta(uid,gid)
     # 天气相关
@@ -114,17 +115,6 @@ def recallFun(message_id):
         mes = '不准撤回😡!\n' + nickN + ': ' + response.get('message').replace('不准撤回😡!\n','')
         send_msg(mes,uid,gid)
 
-# 随机图片
-def randPic():
-    baseApi = 'https://api.gmit.vip/Api/DmImg?format=json'
-    resp = requests.get(url=baseApi).json()
-    # print(resp.get('code'))
-    if resp.get('code') == '200':
-        theUrl = resp.get('data').get('url')
-        return '[CQ:image,file={0},subType=0,url={1}]'.format('fbekjqdnl1.image',theUrl)
-    else:
-        return "Err: api调用出错"
-
 # 复读
 def repeat(message,uid,gid=None):
     if gid == None:
@@ -143,6 +133,7 @@ def repeat(message,uid,gid=None):
         repeatMsg[gid] = '1'+ message
     return
 
+# 功能信息
 def allSta(uid,gid=None):
     if gid == None:
         return
@@ -151,18 +142,9 @@ def allSta(uid,gid=None):
         re = repeatMsg[gid] if gid in repeatMsg else 'None'
         tmpMes = '防撤回状态: {0}\n复读信息: {1}\n预报时间: {2}'.format(wd,re,':'.join(weaSet))
         send_msg(tmpMes,uid,gid)
-        
-def setu(tag):
-    api = 'https://api.lolicon.app/setu/v2'
-    if tag !='':
-        api += '?tag={0}'.format(tag)
-    res = requests.get(url=api).json()
-    data = res.get('data')
-    if len(data)==0:
-        return '不存在该tag的数据哦'
-    theUrl = data[0].get('urls').get('original')
-    return '[CQ:image,file={0},subType=0,url={1}]'.format('fbekjqdnl1.image',theUrl)
 
+
+# 天气预报相关 
 WeaGroup = [654475543,182103094,749153468]
 weaSet = ['07','00']
 
