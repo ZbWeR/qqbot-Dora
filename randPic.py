@@ -59,7 +59,7 @@ def setu1(mes='nil',aid=None):
         resUrl[0]['author_uid']
         )
 
-def setu2(mes='nil',aid=None):
+def setu2(mes='ni',aid=None):
     # print(mes)
     if aid==None:
         url = 'https://api.lolicon.app/setu/v2?tag=' + mes
@@ -67,7 +67,8 @@ def setu2(mes='nil',aid=None):
         url = 'https://api.lolicon.app/setu/v2?tag={0}&uid={1}'.format(mes,aid)
     res = requests.get(url).json()
     resUrl = res.get('data')
-    if resUrl== None:
+    
+    if resUrl== None or len(resUrl)==0:
         return '不存在该tag的数据哦~'
     return '画师uid:{2}\n[CQ:image,file={0},subType=0,url={1}]'.format(
         generate_random_str() + '.image',
