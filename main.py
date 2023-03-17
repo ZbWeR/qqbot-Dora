@@ -1,6 +1,10 @@
 from flask import Flask, request
 # 导入功能模块
 import api
+import os
+
+os.environ["HTTP_PROXY"] = "http://127.0.0.1:7890"
+os.environ["HTTPS_PROXY"] = "http://127.0.0.1:7890"
 
 app = Flask(__name__)
 
