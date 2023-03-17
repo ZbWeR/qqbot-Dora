@@ -166,7 +166,7 @@ def weaClock(message):
         a = int(arr[0])
         b = int(arr[1])
         if (a < 0 or a >= 24 or b < 0 or b >= 60):
-            return '格式错误'
+            return '格式错误！'
         for i in range(len(arr)):
             if len(arr[i])<2:
                 arr[i] = '0'+arr[i]
@@ -174,5 +174,5 @@ def weaClock(message):
         weaSet = arr
         return '预报时间更新为: '+':'.join(weaSet)
     except Exception:
-        return '格式错误'
+        return '格式错误！'
     
