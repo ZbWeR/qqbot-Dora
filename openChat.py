@@ -1,8 +1,6 @@
 import openai
 import os
 
-os.environ["HTTP_PROXY"] = "http://127.0.0.1:7890"
-os.environ["HTTPS_PROXY"] = "http://127.0.0.1:7890"
 openai.api_key = "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"
 
 groupPreset = {}
@@ -48,7 +46,7 @@ def chat(mes,uid,gid=None):
             groupPreset[tgid] = prompt
         return respCont
     except Exception as exc:
-        return exc
+        return str(exc)
 
 def get(uid,gid=None):
     if gid == None:

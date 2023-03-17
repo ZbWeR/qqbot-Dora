@@ -30,6 +30,7 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
     # 返回所有指令
     if message[1:5]=='help':
         tmpMes = '\n'.join(instrAll)
+        # print(message)
         send_msg(tmpMes,uid,gid)
     # 返回指定内容
     elif message[1:7]=='return':
@@ -100,8 +101,10 @@ def send_msg(message,uid,gid=None):
         payload = baseUrl + 'send_msg?group_id={0}&message={1}'.format(gid,encodeMsg)
     else:
         payload = baseUrl + 'send_msg?user_id={0}&message={1}'.format(uid,encodeMsg)
+    proxies = { "http": None, "https": None}
+    js = requests.get(url=payload,proxies=proxies)
     # print(payload)
-    requests.get(url=payload)
+    # print(js)
     return "Ok"
 
 # 防撤回功能
