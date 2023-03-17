@@ -157,12 +157,19 @@ def autoWea(timeStamp):
             instruction('~briefForecast',None,gid)
 
 def weaClock(message):
-    mes = message.replace('~clock','').lstrip()
-    arr = mes.split(' ')
-    for i in range(len(arr)):
-        if len(arr[i])<2:
-            arr[i] = '0'+arr[i]
-    global weaSet
-    weaSet = arr
-    return '预报时间更新为: '+':'.join(weaSet)
+    try:
+        mes = message.replace('~clock','').lstrip()
+        arr = mes.split(' ')
+        a = int(arr[0])
+        b = int(arr[1])
+        if (a < 0 or a >= 24 or b < 0 or b >= 60):
+            return '格式错误'
+        for i in range(len(arr)):
+            if len(arr[i])<2:
+                arr[i] = '0'+arr[i]
+        global weaSet
+        weaSet = arr
+        return '预报时间更新为: '+':'.join(weaSet)
+    except Exception:
+        return '格式错误'
     
