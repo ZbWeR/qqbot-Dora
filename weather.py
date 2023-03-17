@@ -7,8 +7,12 @@ baseUrl = 'https://devapi.qweather.com/v7/'
 
 def getLoc(pos):
     url = 'https://geoapi.qweather.com/v2/city/lookup?location={0}&key={1}'.format(pos,apikey)
-    res = requests.get(url).json().get('location')[0].get('id')
-    return res
+    res = requests.get(url).json()
+    if res.get('code')!='200':
+        return str(res)
+    else:
+        locID = res.get('location')[0].get('id')
+    return str(locID)
 
 # 大致预报
 def briefForecast():
@@ -32,6 +36,9 @@ def detailForecast(pos=''):
         pos = '郫都'
     else:
         loc = getLoc(pos)
+        print(loc,type(loc))
+        if loc.isdigit()==False:
+            return loc
     url = baseUrl + 'weather/24h?location={0}&key={1}'.format(loc,apikey)
     res = requests.get(url).json().get('hourly')
     mes = []
