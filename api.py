@@ -119,22 +119,41 @@ def recallFun(message_id):
         send_msg(mes,uid,gid)
 
 # 复读
-def repeat(message,uid,gid=None):
-    if gid == None:
-        return 
+# def repeat(message,uid,gid=None):
+#     if gid == None:
+#         return 
+#     if gid in repeatMsg:
+#         # print(repeatMsg[gid])
+#         if message == repeatMsg[gid][1:]:
+#             if repeatMsg[gid][0] == '1':
+#                 send_msg(repeatMsg[gid][1:],uid,gid)
+#                 repeatMsg[gid] = '0' + message
+#             else:
+#                 return
+#         else:
+#             repeatMsg[gid] = '1' + message
+#     else:
+#         repeatMsg[gid] = '1'+ message
+#     return
+def repeat(message, uid, gid=None):
+    if gid is None:
+        return
+
     if gid in repeatMsg:
-        # print(repeatMsg[gid])
-        if message == repeatMsg[gid][1:]:
-            if repeatMsg[gid][0] == '1':
-                send_msg(repeatMsg[gid][1:],uid,gid)
-                repeatMsg[gid] = '0' + message
-            else:
-                return
+        repeat_info = repeatMsg[gid]
+        if message == repeat_info['message']:
+            if uid not in repeat_info['users']:
+                repeat_info['users'].add(uid)
+                if len(repeat_info['users']) == 3 and not repeat_info['repeated']:
+                    send_msg(repeat_info['message'], uid, gid)
+                    repeat_info['repeated'] = True
         else:
-            repeatMsg[gid] = '1' + message
+            repeatMsg[gid] = {'message': message, 'users': {uid}, 'repeated': False}
     else:
-        repeatMsg[gid] = '1'+ message
+        repeatMsg[gid] = {'message': message, 'users': {uid}, 'repeated': False}
+
     return
+
 
 # 功能信息
 def allSta(uid,gid=None):
