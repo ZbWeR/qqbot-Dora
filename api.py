@@ -53,7 +53,7 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
             send_msg(errMsg,uid,gid)
     # ai对话相关
     elif message[1:5]=='chat':
-        tmpMes = message.replace('~chat','').lstrip()
+        tmpMes = message[5:].lstrip();
         chatReply = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(mid,uid) +openChat.chat(tmpMes,uid,gid)
         send_msg(chatReply,uid,gid)
     elif message[1:6]=='clear':
@@ -63,7 +63,7 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
         tmpMes = openChat.get(uid,gid)
         send_msg(repr(tmpMes),uid,gid)
     elif message[1:7]=='preset':
-        tmpMes = message.replace('~preset','').lstrip()
+        tmpMes = message[7:].lstrip()
         openChat.preset(tmpMes,uid,gid)
         send_msg('预设成功🏃',uid,gid)
     # 随机图片相关
@@ -84,7 +84,8 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
         if warning!='':
             send_msg(warning,uid,gid)
     elif message[1:4]=='wea':
-        pos = message.replace('~wea','').lstrip()
+        # pos = message.replace('~wea','').lstrip()
+        pos = message[4:].lstrip();
         tmpMes = weather.detailForecast(pos)
         send_msg(tmpMes,uid,gid)
     elif message[1:6]=='clock':
@@ -164,7 +165,8 @@ def autoWea(timeStamp):
 
 def weaClock(message):
     try:
-        mes = message.replace('~clock','').lstrip()
+        mes = message[6:].lstrip()
+        # mes = message.replace('~clock','').lstrip()
         arr = mes.split(' ')
         a = int(arr[0])
         b = int(arr[1])
