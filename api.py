@@ -119,22 +119,6 @@ def recallFun(message_id):
         send_msg(mes,uid,gid)
 
 # 复读
-# def repeat(message,uid,gid=None):
-#     if gid == None:
-#         return 
-#     if gid in repeatMsg:
-#         # print(repeatMsg[gid])
-#         if message == repeatMsg[gid][1:]:
-#             if repeatMsg[gid][0] == '1':
-#                 send_msg(repeatMsg[gid][1:],uid,gid)
-#                 repeatMsg[gid] = '0' + message
-#             else:
-#                 return
-#         else:
-#             repeatMsg[gid] = '1' + message
-#     else:
-#         repeatMsg[gid] = '1'+ message
-#     return
 def repeat(message, uid, gid=None):
     if gid is None:
         return
