@@ -84,12 +84,14 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
         if warning!='':
             send_msg(warning,uid,gid)
     elif message[1:4]=='wea':
-        # pos = message.replace('~wea','').lstrip()
         pos = message[4:].lstrip();
         tmpMes = weather.detailForecast(pos)
         send_msg(tmpMes,uid,gid)
     elif message[1:6]=='clock':
         tmpMes = weaClock(message)
+        send_msg(tmpMes,uid,gid)
+    elif message[1:5]=='warn':
+        tmpMes = weather.warning()
         send_msg(tmpMes,uid,gid)
     else:
         return send_msg(errMsg,uid,gid)
