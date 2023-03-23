@@ -17,13 +17,10 @@ def chat(mes,uid,gid=None):
     global groupPreset,BasePrompt
     if gid == None:
         lastPrompt = groupPreset[tuid] if tuid in groupPreset else BasePrompt
-        # assCon = {"role":"assistant","content":""}
     else:
         lastPrompt = groupPreset[tgid] if tgid in groupPreset else BasePrompt
-        # assCon = {"role":"assistant","content":""}
 
     prompt = lastPrompt.copy()
-    # prompt.append(assCon.copy())
     prompt.append({"role": "user","content":mes})
     # 此处为超限处理
     if len(prompt)>=16:
