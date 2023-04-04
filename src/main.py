@@ -1,6 +1,6 @@
 from flask import Flask, request
 # 导入功能模块
-import api
+import api,timing,nativeAPI
 import os
 
 os.environ["HTTP_PROXY"] = "http://127.0.0.1:7890"
@@ -26,12 +26,9 @@ def post_data():
             isInstr = api.instruction(msg,uid,gid,rol,mid)
     # 防撤回
     elif requText.get('post_type') == 'notice':
-        # print(requText)
-        api.recallFun(mid)
-    elif requText.get('post_type') == 'meta_event':
-        api.autoWea(requText.get('time'))
+        nativeAPI.recallFun(mid)
     return 'OK'
 
 if __name__ == '__main__':
+    timing.run_clock()
     app.run(debug=True, host='127.0.0.1', port=5701)
-

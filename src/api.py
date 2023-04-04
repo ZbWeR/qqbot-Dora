@@ -1,24 +1,22 @@
-import requests
-from urllib import parse
-import openChat
-import weather
-import randPic
-import time
+import requests,time
+import openChat,weather,randPic
+import timing
+from nativeAPI import send_msg,recallFlag
 
 baseUrl = 'http://127.0.0.1:5700/'
 
 repeatMsg = {}  # 复读辅助集合
-recallFlag = {} # 防撤回开关
-groupPreSet = {}
 
 instrAll = [
-    '~help        - 显示所有指令',
+    '~help        - 显示指令集',
+    '~pic          - 随机图片',
     '~setu        - 好康的',
     '~chat        - 聊天',
-    '~pic          - 随机图片',
-    '~wea          - 天气预报'
+    '~wea         - 天气预报',
+    '~soccer     - 约球'
 ]
 
+rootId = 1641064392
 
 # bot指令集
 def instruction(message,uid,gid=None,rol=None,mid=None):
@@ -54,7 +52,10 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
     # ai对话相关
     elif message[1:5]=='chat':
         tmpMes = message[5:].lstrip();
-        chatReply = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(mid,uid) +openChat.chat(tmpMes,uid,gid)
+        if mid == None:
+            chatReply = openChat.chat(tmpMes,uid,gid)
+        else:
+            chatReply = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(mid,uid) +openChat.chat(tmpMes,uid,gid)
         send_msg(chatReply,uid,gid)
     elif message[1:6]=='clear':
         openChat.clear(uid,gid)
@@ -81,45 +82,24 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
         tmpMes = weather.briefForecast()
         warning = weather.warning()
         send_msg(tmpMes,uid,gid)
-        if warning!='':
+        if warning!='No Warning':
             send_msg(warning,uid,gid)
     elif message[1:4]=='wea':
         pos = message[4:].lstrip();
         tmpMes = weather.detailForecast(pos)
         send_msg(tmpMes,uid,gid)
     elif message[1:6]=='clock':
-        tmpMes = weaClock(message)
+        tmpMes = setClock(message,"weather")
         send_msg(tmpMes,uid,gid)
     elif message[1:5]=='warn':
         tmpMes = weather.warning()
         send_msg(tmpMes,uid,gid)
+    # 约球
+    elif message[1:7]=="soccer":
+        tmpMes = setClock(message,"soccer",15)
+        send_msg(tmpMes,uid,gid)
     else:
         return send_msg(errMsg,uid,gid)
-
-
-# 发送私聊或群聊消息
-def send_msg(message,uid,gid=None):
-    encodeMsg = parse.quote(message)
-    if gid != None:
-        payload = baseUrl + 'send_msg?group_id={0}&message={1}'.format(gid,encodeMsg)
-    else:
-        payload = baseUrl + 'send_msg?user_id={0}&message={1}'.format(uid,encodeMsg)
-    proxies = { "http": None, "https": None}
-    js = requests.get(url=payload,proxies=proxies)
-    # print(payload)
-    # print(js)
-    return "Ok"
-
-# 防撤回功能
-def recallFun(message_id):
-    payload = baseUrl + 'get_msg?message_id={0}'.format(message_id)
-    response = requests.get(url=payload).json().get('data')
-    gid = response.get('group_id')
-    uid = response.get('sender').get('user_id')
-    nickN = response.get('sender').get('nickname')
-    if gid in recallFlag and recallFlag[gid] == 1:
-        mes = '不准撤回😡!\n' + nickN + ': ' + response.get('message').replace('不准撤回😡!\n','')
-        send_msg(mes,uid,gid)
 
 # 复读
 def repeat(message, uid, gid=None):
@@ -138,7 +118,6 @@ def repeat(message, uid, gid=None):
             repeatMsg[gid] = {'message': message, 'users': {uid}, 'repeated': False}
     else:
         repeatMsg[gid] = {'message': message, 'users': {uid}, 'repeated': False}
-
     return
 
 
@@ -149,37 +128,41 @@ def allSta(uid,gid=None):
     else:
         wd = 'On' if gid in recallFlag else 'off'
         re = repeatMsg[gid] if gid in repeatMsg else 'None'
-        tmpMes = '防撤回状态: {0}\n复读信息: {1}\n预报时间: {2}'.format(wd,re,':'.join(weaSet))
+        weaTime = '{0}:{1}'.format(timing.weaCof["hour"],timing.weaCof["minus"])
+        tmpMes = '防撤回状态: {0}\n复读信息: {1}\n预报时间: {2}'.format(wd,re,weaTime)
         send_msg(tmpMes,uid,gid)
 
 
-# 天气预报相关 
-WeaGroup = [654475543,182103094,749153468]
-weaSet = ['07','00']
-
-def autoWea(timeStamp):
-    NowTime = time.localtime(timeStamp)
-    HMSTime = time.strftime("%H:%M:%S", NowTime)
-    tmp = '{0}:{1}:'.format(weaSet[0],weaSet[1])
-    if HMSTime >=tmp+'00' and HMSTime<=tmp+'04':
-        for gid in WeaGroup:
-            instruction('~briefForecast',None,gid)
-
-def weaClock(message):
+# 设置预报的时间
+def setClock(message,type,offset=0):
     try:
-        mes = message[6:].lstrip()
-        # mes = message.replace('~clock','').lstrip()
-        arr = mes.split(' ')
+        pos = message.find(' ')
+        arr = message[pos+1:].split(' ')
         a = int(arr[0])
         b = int(arr[1])
-        if (a < 0 or a >= 24 or b < 0 or b >= 60):
+        if b-offset<0:
+            a = (a-1)%24
+            b = (b-offset)%60
+        else:
+            b = b-offset
+        if (a < 0 or a >= 24 or b < 0 or b >= 60 or offset>=60):
             return '格式错误！'
-        for i in range(len(arr)):
-            if len(arr[i])<2:
-                arr[i] = '0'+arr[i]
-        global weaSet
-        weaSet = arr
-        return '预报时间更新为: '+':'.join(weaSet)
-    except Exception:
-        return '格式错误！'
+
+        tmpa = "0"+str(a) if a<10 else str(a)
+        tmpb = "0"+str(b) if b<10 else str(b)
+
+        if type == "weather":
+            timing.weaCof["enable"] = True
+            timing.weaCof["hour"] = a
+            timing.weaCof["minus"] = b
+            return "预报更新: {0}:{1}".format(tmpa,tmpb)
+            
+        elif type == "soccer":
+            timing.soccerConf["enable"] = True
+            timing.soccerConf["hour"] = a
+            timing.soccerConf["minus"] = b
+            # print("喵喵喵")
+            return "约球更新: {0}:{1}".format(tmpa,tmpb)
+    except Exception as exc:
+        return '格式错误！' + str(exc)
     
