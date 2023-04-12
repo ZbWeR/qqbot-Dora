@@ -18,7 +18,8 @@ soccerConf = {
     "hour":21,
     "minus":0,
     "groups":[
-        654475543
+        654475543,
+        732487879
     ],
 }
 
@@ -29,6 +30,12 @@ def weaClock(hour,minus):
         tmpMes = weather.briefForecast()
         for group in weaCof["groups"]:
             send_msg(tmpMes,myUid,group)
+
+        warning = weather.warning()
+        if warning!='No Warning':
+            for group in weaCof["groups"]:
+                send_msg(warning,myUid,group)
+        
         weaCof["enable"] = False
 
 # 约球提醒
@@ -48,12 +55,6 @@ def allClock():
         # 每日重置enable
         if hour ==0 and minus == 0:
             weaCof["enable"] = True
-            # soccerConf["enable"]=True
-        # 天气预警
-        warning = weather.warning()
-        if warning!='No Warning':
-            for group in weaCof["groups"]:
-                send_msg(warning,myUid,group)
         # 天气预报
         if weaCof["enable"]:
             weaClock(hour,minus)
