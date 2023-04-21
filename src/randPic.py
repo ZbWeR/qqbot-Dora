@@ -15,7 +15,7 @@ def normal():
     if code != '200':
         return '⚠️访问出错啦!\n' + 'Status Code: '+code
     resUrl = res.get('data')['url']
-    return '[CQ:image,file={0},subType=0,url={1}]'.format('fbekjqdnl1.image',resUrl)
+    return '[CQ:image,file={0},subType=0,url={1}]'.format(generate_random_str() + '.image',resUrl)
 
 # 生成随机字符串,用于发送CQ码
 def generate_random_str(randomlength=8):
@@ -75,3 +75,9 @@ def setu2(mes='ni',aid=None):
         resUrl[0]['urls']['original'],
         resUrl[0]['uid']
         )
+
+def moyuPic():
+    url = 'https://api.j4u.ink/v1/store/other/proxy/remote/moyu.json'
+    res = requests.get(url).json()
+    resUrl = res["data"]["moyu_url"]
+    return '[CQ:image,file={0},subType=0,url={1}]'.format(generate_random_str() + '.image',resUrl)

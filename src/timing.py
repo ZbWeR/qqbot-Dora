@@ -1,27 +1,12 @@
 import time,threading
+import randPic
 from nativeAPI import send_msg
-import weather
+import weather,realDora,random
+from config import SELFID,SOCCER_COF,WEATHER_COF
 
-myUid = 3223947071
-weaCof = {
-    "enable":True,
-    "hour":7,
-    "minus":0,
-    "groups":[
-        654475543,
-        182103094,
-        749153468
-    ],
-}
-soccerConf = {
-    "enable":False,
-    "hour":21,
-    "minus":0,
-    "groups":[
-        654475543,
-        732487879
-    ],
-}
+myUid = SELFID
+weaCof = WEATHER_COF
+soccerConf = SOCCER_COF
 
 # 天气预报
 def weaClock(hour,minus):
@@ -36,6 +21,10 @@ def weaClock(hour,minus):
             for group in weaCof["groups"]:
                 send_msg(warning,myUid,group)
         
+        tmpMes = randPic.moyuPic()
+        for group in weaCof["groups"]:
+            send_msg(tmpMes,myUid,group)
+
         weaCof["enable"] = False
 
 # 约球提醒
@@ -46,6 +35,13 @@ def soccerClock(hour,minus):
         for group in soccerConf["groups"]:
             send_msg(tmpMes,myUid,group)
         soccerConf["enable"] = False
+
+def doraMewo():
+    pos = random.randint(0,len(weaCof["groups"])-1)
+    mes = realDora.talkToMyself()
+    if mes != "SILENT":
+        send_msg(mes,myUid,weaCof["groups"][pos])
+        print("喵呜~" , weaCof["groups"][pos],mes)
 
 def allClock():
     while True:
@@ -61,6 +57,10 @@ def allClock():
         # 约球提醒
         if soccerConf["enable"]:
             soccerClock(hour,minus)
+
+        if random.randint(0,1000)<500:
+            doraMewo()
+        
         time.sleep(10)
 
 def run_clock():

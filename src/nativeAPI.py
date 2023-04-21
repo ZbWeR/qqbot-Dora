@@ -17,6 +17,12 @@ def send_msg(message,uid,gid=None):
     # print(js)
     return "Ok"
 
+def getMsg(mid):
+    payload = baseUrl + 'get_msg?message_id={}'.format(mid)
+    res = requests.get(url=payload,proxies=no_proxy)
+    return res.json()
+
+
 def recallFun(message_id):
     payload = baseUrl + 'get_msg?message_id={0}'.format(message_id)
     # print(payload)

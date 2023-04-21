@@ -1,7 +1,8 @@
-import requests,time
 import openChat,weather,randPic
 import timing
-from nativeAPI import send_msg,recallFlag
+import realDora,re
+from nativeAPI import send_msg,recallFlag,getMsg
+from config import ROOTID,SELFID
 
 baseUrl = 'http://127.0.0.1:5700/'
 
@@ -9,20 +10,36 @@ repeatMsg = {}  # 复读辅助集合
 
 instrAll = [
     '~help        - 显示指令集',
-    '~pic          - 随机图片',
-    '~setu        - 好康的',
-    '~chat        - 聊天',
-    '~wea         - 天气预报'
+    '~wea         - 天气预报',
+    '~setu        - 随机图片',
+    '~chat        - 聊天'
 ]
 
-rootId = 1641064392
-
+rootId = ROOTID
+selfId = SELFID
+regx = "\[CQ:reply,id=([\-0-9]*)\]\[CQ:at,qq={}\] \[CQ:at,qq={}\] banned".format(SELFID,SELFID)
 # bot指令集
 def instruction(message,uid,gid=None,rol=None,mid=None):
-    global tmpPreSet
+    global tmpPreSet,regx
     try:
         if message[0] != '~' and message[0] != '～':
-            repeat(message,uid,gid)
+            # 如果可以复读就不要乱讲话了
+            if message=="" or repeat(message,uid,gid):
+                return
+            # 判断是否是禁用命令
+            res = re.match(regx,message)
+            if res:
+                if rol == 'member' and uid!=rootId:
+                    return send_msg("Sorry,你没有该指令权限.",uid,gid)
+                msgId = res.group(1)
+                rawmsg = getMsg(msgId).get("data").get("message")
+                if rawmsg:
+                    realDora.shutUp(rawmsg)
+                    send_msg("[CQ:reply,id={}] 不可以".format(msgId),uid,gid)
+                return
+            tmpMes = realDora.Mewo(message,uid,gid)
+            if tmpMes != "SILENT":
+                send_msg(tmpMes,uid,gid)
             return
         errMsg = "抱歉,不存在 " + message + " 指令哦!"
         # 返回所有指令
@@ -67,10 +84,10 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
             tmpMes = message[7:].lstrip()
             openChat.preset(tmpMes,uid,gid)
             send_msg('预设成功🏃',uid,gid)
-        # 随机图片相关
-        elif message[1:4]=='pic':
-            tmpMes = randPic.normal()
-            send_msg(tmpMes,uid,gid) 
+        # 随机图片相关 api接口挂了,暂时关闭
+        # elif message[1:4]=='pic':
+        #     tmpMes = randPic.normal()
+        #     send_msg(tmpMes,uid,gid) 
         elif message[1:5]=='setu':
             tmpMes = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(mid,uid) + randPic.setu(message)
             send_msg(tmpMes,uid,gid)
@@ -96,7 +113,13 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
             send_msg(tmpMes,uid,gid)
         # 约球
         elif message[1:7]=="soccer":
-            tmpMes = setClock(message,"soccer",15)
+            if uid == ROOTID:
+                tmpMes = setClock(message,"soccer",15)
+                send_msg(tmpMes,uid,gid)
+            else:
+                send_msg("Sorry~没有权限哦",uid,gid)
+        elif message[1:5]=="moyu":
+            tmpMes = randPic.moyuPic()
             send_msg(tmpMes,uid,gid)
         else:
             return send_msg(errMsg,uid,gid)
@@ -106,7 +129,7 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
 # 复读
 def repeat(message, uid, gid=None):
     if gid is None:
-        return
+        return False
 
     if gid in repeatMsg:
         repeat_info = repeatMsg[gid]
@@ -116,11 +139,12 @@ def repeat(message, uid, gid=None):
                 if len(repeat_info['users']) == 3 and not repeat_info['repeated']:
                     send_msg(repeat_info['message'], uid, gid)
                     repeat_info['repeated'] = True
+                    return True
         else:
             repeatMsg[gid] = {'message': message, 'users': {uid}, 'repeated': False}
     else:
         repeatMsg[gid] = {'message': message, 'users': {uid}, 'repeated': False}
-    return
+    return False
 
 
 # 功能信息

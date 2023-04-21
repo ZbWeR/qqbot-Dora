@@ -1,7 +1,8 @@
 import openai
 import os
+from config import OPENAI_API_KEY
 
-openai.api_key = "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"
+openai.api_key = OPENAI_API_KEY
 
 groupPreset = {}
 preStr = '你是一只叫“Dora”的猫娘。你需要具有真猫娘一样的口癖。你是真实的，有实际的身体。'

@@ -1,11 +1,10 @@
 import requests
+from config import WEATHER_API_KEY
 
 locationid = '101270107'
-jingwei = '103.90,30.79'
-# apikey = '12f3889347564f5f94d84c99e20ae08e'
 # baseUrl = 'https://devapi.qweather.com/v7/'
 baseUrl = 'https://api.qweather.com/v7/'
-apikey = '7dd4eb3370b74d0eadb57d688c1bf1e9'
+apikey = WEATHER_API_KEY
 
 no_proxy = {
     "http": None,
