@@ -58,7 +58,10 @@ def allClock():
         if soccerConf["enable"]:
             soccerClock(hour,minus)
 
-        if random.randint(0,1000)<500:
+        if hour>=0 and hour<=7:
+            if random.randint(0,1000)<=1:
+                doraMewo()
+        elif random.randint(0,1000)<=4:
             doraMewo()
         
         time.sleep(10)
