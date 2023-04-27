@@ -19,8 +19,19 @@ def checkConnection():
     except Exception as e:
         print(e)
 
-def addMes(msg,lastMsg,gid,nowKeywords,lastKeywords):
+# 禁止的消息类型：转发消息 / 回复消息
+forbidenMsgType = ['forward','reply']
+# 不符合隐私规则就返回True
+def privateRulesCheck(readyToSend):
+    flag = False
+    for item in forbidenMsgType:
+        if item in readyToSend:
+            flag = True
+            break
+    return flag
 
+
+def addMes(msg,lastMsg,gid,nowKeywords,lastKeywords):
     # 如果数据库中存在 lastMsg
     result = coll.find_one({"keywords":lastKeywords})
     if result:
@@ -68,29 +79,10 @@ def addMes(msg,lastMsg,gid,nowKeywords,lastKeywords):
         res = coll.insert_one(newDoc)
         print("消息不存在,已添加",res.acknowledged)
 
-speakCount = 0
-maxSpeakCount = 10
-stopAnswer = [
-    "喵~我去玩游戏啦,跟大家说拜拜辣",
-    "嗷呜~现在是上课时间，猫娘得准时出门~",
-    "咕噜~我要去踢球啦，不陪大家聊天辣,拜拜拜拜~",
-    "嘶~下班啦！",
-    "咕噜~虽然是上班时间，但我要摸鱼一会儿"]
-
+# 随机回复
 def speak(msgKeywords):
-    global speakCount,maxSpeakCount
-
-    if speakCount<0:
-        speakCount +=1
-        return "SILENT"
-
     result = coll.find_one({"keywords":msgKeywords})
     if result:
-        speakCount += 1
-        if speakCount>=maxSpeakCount:
-            stopPos = random.randint(0,len(stopAnswer)-1)
-            speakCount = -50
-            return stopAnswer[stopPos]
         answerArr = result["answer"]
         new_list = [item for item in answerArr if item["count"] >= 3]
         if len(new_list)==0:
@@ -98,8 +90,22 @@ def speak(msgKeywords):
         ansPos = random.randint(0,len(new_list)-1)
         ansArr = new_list[ansPos]["rawmsg"]
         msgPos = random.randint(0,len(ansArr)-1)
-        print("回复:",ansArr[msgPos])
-        if banListColl.find_one({"rawmsg":ansArr[msgPos]}):
+        readyToSend = ansArr[msgPos]
+        
+        imgName = re.search(r'file=(.*?).image',readyToSend)
+        if imgName:
+            imgName = imgName.group(1)
+        else:
+            imgName = "全栈安娜"
+
+        print("回复:",readyToSend)
+        # 在违禁词列表中找到 / 违反隐私策略
+        isForbiden = banListColl.find_one({"$or":[
+                {"rawmsg":readyToSend},
+                {"rawmsg": {"$regex": imgName, "$options": "i"}}
+            ]})
+        print(isForbiden,imgName)
+        if isForbiden or privateRulesCheck(readyToSend):
             return "SILENT"
         return ansArr[msgPos]
     else:
@@ -112,21 +118,23 @@ def shutUp(rawmsg):
     print("-- shutUp --")
     print("添加违禁词:",result.acknowledged)
 
+# 初始时不存在lastMsg的处理
 iniMsg = "全栈安娜"
 lsGroupMsg = {}
 for item in REAL_DORA_GROUP:
     lsGroupMsg[item] = iniMsg
 
+# 随机发言
 def talkToMyself():
     results = coll.find(
         {
-            "count": {"$gte": 15},
-            "keywords": {"$not": re.compile("reply", re.IGNORECASE)}
+            "count": {"$gte": 40}
+            # "keywords": {"$not": re.compile("reply", re.IGNORECASE)}
         }).sort("count", pymongo.DESCENDING)
     result_list = list(results)
     msgPos = random.randint(0,len(result_list)-1)
     rawmsg = result_list[msgPos]["rawmsg"]
-    if rawmsg != "全栈安娜":
+    if rawmsg != "全栈安娜" and not privateRulesCheck(rawmsg):
         return rawmsg
     return "SILENT"
 
@@ -145,8 +153,10 @@ def Mewo(message,uid,gid):
     opt = random.randint(1,100)
     if opt<=1:
         return cqCode.poke(uid);
-    elif opt<=90:
+    elif opt<=80:
         # return talkToMyself()
         return speak(nowKeywords)
     else:
         return "SILENT"
+
+# checkConnection()
