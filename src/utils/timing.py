@@ -1,10 +1,12 @@
-import time,threading
-import randPic
-from nativeAPI import send_msg
-import weather,realDora,random
-from config import SELFID,SOCCER_COF,WEATHER_COF
+import time
+import threading
+import random
 
-myUid = SELFID
+from native_api import send_msg
+from utils import rand_pic,weather,real_dora
+from config import SELF_ID,SOCCER_COF,WEATHER_COF
+
+myUid = SELF_ID
 weaCof = WEATHER_COF
 soccerConf = SOCCER_COF
 
@@ -21,7 +23,7 @@ def weaClock(hour,minus):
             for group in weaCof["groups"]:
                 send_msg(warning,myUid,group)
         
-        tmpMes = randPic.moyuPic()
+        tmpMes = rand_pic.moyuPic()
         for group in weaCof["groups"]:
             send_msg(tmpMes,myUid,group)
 
@@ -38,7 +40,7 @@ def soccerClock(hour,minus):
 
 def doraMewo():
     pos = random.randint(0,len(weaCof["groups"])-1)
-    mes = realDora.talkToMyself()
+    mes = real_dora.talkToMyself()
     if mes != "SILENT":
         send_msg(mes,myUid,weaCof["groups"][pos])
         print("喵呜~" , weaCof["groups"][pos],mes)

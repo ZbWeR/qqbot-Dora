@@ -1,8 +1,9 @@
 import os
+import sys
 from flask import Flask, request
 
-from utils import timing,native_api
-import api
+from utils import timing
+import api,native_api
 
 os.environ["HTTP_PROXY"] = "http://127.0.0.1:7890"
 os.environ["HTTPS_PROXY"] = "http://127.0.0.1:7890"

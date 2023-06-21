@@ -1,7 +1,7 @@
 import re
 
 from config import ROOT_ID,SELF_ID
-from native_api import send_msg,recallFlag,get_msg
+from native_api import send_msg,RECALL_FLAG,get_msg
 from utils import openai_chat, weather, rand_pic,timing,real_dora
 
 BASE_URL = 'http://127.0.0.1:5700/'
@@ -60,10 +60,10 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
                 return send_msg("Sorry,你没有该指令权限.",uid,gid)
             if message[4:6]=='on':
                 send_msg("该群聊已开启防撤回功能",uid,gid)
-                recallFlag[gid] = 1
+                RECALL_FLAG[gid] = 1
             elif message[4:7]=='off':
-                if recallFlag.__contains__(gid):
-                    del recallFlag[gid]
+                if RECALL_FLAG.__contains__(gid):
+                    del RECALL_FLAG[gid]
                 send_msg("防撤回功能已关闭",uid,gid)
             else:
                 send_msg(errMsg,uid,gid)
@@ -171,12 +171,11 @@ def all_sta(uid,gid=None,repeat_msg_dict={}):
     Returns:
         None
     """
-    if gid == None:
-        return
-    else:
-        withdraw_status = 'On' if gid in recallFlag else 'off'
+    if gid is not None:
+        withdraw_status = 'On' if gid in RECALL_FLAG else 'off'
         repeat_status = repeat_msg_dict.get(gid, 'None') if repeat_msg_dict else 'None'
         weaTime = '{:0>2}:{:0>2}'.format(timing.weaCof["hour"],timing.weaCof["minus"])
+        
         tmpMes = f"防撤回状态: {withdraw_status}\n复读信息: {repeat_status}\n预报时间: {weaTime}"
         send_msg(tmpMes,uid,gid)
 

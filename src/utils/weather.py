@@ -1,4 +1,5 @@
 import requests
+
 from config import WEATHER_API_KEY
 
 locationid = '101270107'

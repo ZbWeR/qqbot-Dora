@@ -1,8 +1,8 @@
 import random,copy,re
-import cqCode
-# import jiebaFun
 from pymongo.mongo_client import MongoClient
 import pymongo
+
+from utils import cq_code
 from config import REAL_DORA_GROUP,MONGODB_URL
 
 uri = MONGODB_URL
@@ -142,9 +142,11 @@ def Mewo(message,uid,gid):
     # 提取关键词
     global lsGroupMsg
     lastMsg = lsGroupMsg.get(gid,'NOTHING')
-    nowKeywords = jiebaFun.getKeywords(message)
+    # nowKeywords = jieba_word.getKeywords(message)
+    nowKeywords = '1'
     if lastMsg != "NOTHING":
-        lastKeywords = jiebaFun.getKeywords(lastMsg)
+        # lastKeywords = jieba_word.getKeywords(lastMsg)
+        lastKeywords = '2'
         # 添加到数据库
         if lastKeywords != nowKeywords:
             addMes(message,lastMsg,gid,nowKeywords,lastKeywords)
@@ -152,7 +154,7 @@ def Mewo(message,uid,gid):
     # action
     opt = random.randint(1,100)
     if opt<=1:
-        return cqCode.poke(uid);
+        return cq_code.poke(uid);
     elif opt<=80:
         # return talkToMyself()
         return speak(nowKeywords)

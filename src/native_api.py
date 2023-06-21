@@ -64,5 +64,5 @@ def recall_msg(mid):
     uid = message.get('sender').get('user_id')
     nickname = message.get('sender').get('nickname')
     if gid in RECALL_FLAG and RECALL_FLAG[gid] == 1:
-        new_message = f"不准撤回😡!\n{nickname}: {message.get('message').replace('不准撤回😡!\n', '')}"
+        new_message = "不准撤回😡!\n{}:".format(nickname) + message.get('message').replace('不准撤回😡!\n', '')
         send_msg(new_message,uid,gid)
