@@ -1,50 +1,51 @@
-import openChat,weather,randPic
-import timing
-import realDora,re
-from nativeAPI import send_msg,recallFlag,getMsg
-from config import ROOTID,SELFID
+import re
 
-baseUrl = 'http://127.0.0.1:5700/'
+from config import ROOT_ID,SELF_ID
+from native_api import send_msg,recallFlag,get_msg
+from utils import openai_chat, weather, rand_pic,timing,real_dora
 
-repeatMsg = {}  # 复读辅助集合
+BASE_URL = 'http://127.0.0.1:5700/'
 
-instrAll = [
+INSTR_LIST  = [
     '~help        - 显示指令集',
     '~wea         - 天气预报',
     '~setu        - 随机图片',
     '~chat        - 聊天'
 ]
 
-rootId = ROOTID
-selfId = SELFID
-regx = "\[CQ:reply,id=([\-0-9]*)\]\[CQ:at,qq={}\] \[CQ:at,qq={}\] banned".format(SELFID,SELFID)
+ROOT_ID = ROOT_ID
+SELF_ID = SELF_ID
+
+REGEX = r"\[CQ:reply,id=([\-0-9]*)\]\[CQ:at,qq={}\] \[CQ:at,qq={}\] banned".format(SELF_ID, SELF_ID)
+
 # bot指令集
 def instruction(message,uid,gid=None,rol=None,mid=None):
-    global tmpPreSet,regx
+    global tmpPreSet,REGEX
+    repeat_msg_dict = {}  # 复读辅助集合
     try:
         if message[0] != '~' and message[0] != '～':
             # 如果可以复读就不要乱讲话了
-            if message=="" or repeat(message,uid,gid):
+            if message=="" or handle_repeat (message,uid,gid,repeat_msg_dict):
                 return
             # 判断是否是禁用命令
-            res = re.match(regx,message)
+            res = re.match(REGEX,message)
             if res:
-                if rol == 'member' and uid!=rootId:
+                if rol == 'member' and uid!=ROOT_ID:
                     return send_msg("Sorry,你没有该指令权限.",uid,gid)
                 msgId = res.group(1)
-                rawmsg = getMsg(msgId).get("data").get("message")
+                rawmsg = get_msg(msgId).get("data").get("message")
                 if rawmsg:
-                    realDora.shutUp(rawmsg)
+                    real_dora.shutUp(rawmsg)
                     send_msg("[CQ:reply,id={}] 不可以".format(msgId),uid,gid)
                 return
-            tmpMes = realDora.Mewo(message,uid,gid)
+            tmpMes = real_dora.Mewo(message,uid,gid)
             if tmpMes != "SILENT":
                 send_msg(tmpMes,uid,gid)
             return
         errMsg = "抱歉,不存在 " + message + " 指令哦!"
         # 返回所有指令
         if message[1:5]=='help':
-            tmpMes = '\n'.join(instrAll)
+            tmpMes = '\n'.join(INSTR_LIST )
             # print(message)
             send_msg(tmpMes,uid,gid)
         # 返回指定内容
@@ -70,30 +71,30 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
         elif message[1:5]=='chat':
             tmpMes = message[5:].lstrip();
             if mid == None:
-                chatReply = openChat.chat(tmpMes,uid,gid)
+                chatReply = openai_chat.chat(tmpMes,uid,gid)
             else:
-                chatReply = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(mid,uid) +openChat.chat(tmpMes,uid,gid)
+                chatReply = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(mid,uid) +openai_chat.chat(tmpMes,uid,gid)
             send_msg(chatReply,uid,gid)
         elif message[1:6]=='clear':
-            openChat.clear(uid,gid)
+            openai_chat.clear(uid,gid)
             send_msg('已重置对话🥰',uid,gid)
         elif message[1:4]=='get':
-            tmpMes = openChat.get(uid,gid)
+            tmpMes = openai_chat.get(uid,gid)
             send_msg(repr(tmpMes),uid,gid)
         elif message[1:7]=='preset':
             tmpMes = message[7:].lstrip()
-            openChat.preset(tmpMes,uid,gid)
+            openai_chat.preset(tmpMes,uid,gid)
             send_msg('预设成功🏃',uid,gid)
         # 随机图片相关 api接口挂了,暂时关闭
         # elif message[1:4]=='pic':
         #     tmpMes = randPic.normal()
         #     send_msg(tmpMes,uid,gid) 
         elif message[1:5]=='setu':
-            tmpMes = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(mid,uid) + randPic.setu(message)
+            tmpMes = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(mid,uid) + rand_pic.setu(message)
             send_msg(tmpMes,uid,gid)
         # 功能信息
         elif message[1:7]=='status':
-            allSta(uid,gid)
+            all_sta(uid,gid,repeat_msg_dict)
         # 天气相关
         elif message =='~briefForecast':
             tmpMes = weather.briefForecast()
@@ -113,51 +114,71 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
             send_msg(tmpMes,uid,gid)
         # 约球
         elif message[1:7]=="soccer":
-            if uid == ROOTID:
+            if uid == ROOT_ID:
                 tmpMes = setClock(message,"soccer",15)
                 send_msg(tmpMes,uid,gid)
             else:
                 send_msg("Sorry~没有权限哦",uid,gid)
         elif message[1:5]=="moyu":
-            tmpMes = randPic.moyuPic()
+            tmpMes = rand_pic.moyuPic()
             send_msg(tmpMes,uid,gid)
         else:
             return send_msg(errMsg,uid,gid)
     except Exception as err:
         send_msg(str(err),uid,gid)
 
-# 复读
-def repeat(message, uid, gid=None):
+def handle_repeat(message, uid, gid=None,repeat_msg_dict={}):
+    """
+    处理重复的群组消息，当同一群组中的三个用户发送相同的消息时，自动发送该消息一次。
+
+    Args:
+        message (str): 消息内容。
+        uid (str): 用户ID。
+        gid (str, optional): 群组ID，默认为None。若为None，则不处理消息。
+        repeat_msg_dict (dict, optional): 重复消息字典，默认为空字典。该字典用于存储每个群组的重复消息信息。
+
+    Returns:
+        bool: 是否进行复读。
+    """
     if gid is None:
         return False
 
-    if gid in repeatMsg:
-        repeat_info = repeatMsg[gid]
-        if message == repeat_info['message']:
-            if uid not in repeat_info['users']:
-                repeat_info['users'].add(uid)
-                if len(repeat_info['users']) == 3 and not repeat_info['repeated']:
-                    send_msg(repeat_info['message'], uid, gid)
-                    repeat_info['repeated'] = True
-                    return True
+    if gid in repeat_msg_dict:
+        repeat_info = repeat_msg_dict[gid]
+        if message == repeat_info['message'] and uid not in repeat_info['users']:
+            repeat_info['users'].add(uid)
+            if len(repeat_info['users']) == 3 and not repeat_info['repeated']:
+                send_msg(repeat_info['message'], uid, gid)
+                repeat_info['repeated'] = True
+                return True
         else:
-            repeatMsg[gid] = {'message': message, 'users': {uid}, 'repeated': False}
+            repeat_msg_dict[gid] = {'message': message, 'users': {uid}, 'repeated': False}
     else:
-        repeatMsg[gid] = {'message': message, 'users': {uid}, 'repeated': False}
+        repeat_msg_dict[gid] = {'message': message, 'users': {uid}, 'repeated': False}
     return False
 
 
 # 功能信息
-def allSta(uid,gid=None):
+def all_sta(uid,gid=None,repeat_msg_dict={}):
+    """
+    获取群组状态信息并发送给指定用户
+
+    Args:
+        uid: int, 指定用户的id
+        gid: int, 群组id，默认为None
+        repeat_msg_dict: dict, 群组复读信息字典，默认为None
+
+    Returns:
+        None
+    """
     if gid == None:
         return
     else:
-        wd = 'On' if gid in recallFlag else 'off'
-        re = repeatMsg[gid] if gid in repeatMsg else 'None'
+        withdraw_status = 'On' if gid in recallFlag else 'off'
+        repeat_status = repeat_msg_dict.get(gid, 'None') if repeat_msg_dict else 'None'
         weaTime = '{:0>2}:{:0>2}'.format(timing.weaCof["hour"],timing.weaCof["minus"])
-        tmpMes = '防撤回状态: {0}\n复读信息: {1}\n预报时间: {2}'.format(wd,re,weaTime)
+        tmpMes = f"防撤回状态: {withdraw_status}\n复读信息: {repeat_status}\n预报时间: {weaTime}"
         send_msg(tmpMes,uid,gid)
-
 
 # 设置预报的时间
 def setClock(message,type,offset=0):

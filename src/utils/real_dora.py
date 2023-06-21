@@ -1,6 +1,6 @@
 import random,copy,re
 import cqCode
-import jiebaFun
+# import jiebaFun
 from pymongo.mongo_client import MongoClient
 import pymongo
 from config import REAL_DORA_GROUP,MONGODB_URL
@@ -159,4 +159,4 @@ def Mewo(message,uid,gid):
     else:
         return "SILENT"
 
-# checkConnection()
+checkConnection()
