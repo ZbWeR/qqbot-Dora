@@ -4,11 +4,11 @@ import random
 
 from native_api import send_msg
 from utils import rand_pic,weather,real_dora
-from config import SELF_ID,SOCCER_COF,WEATHER_COF
+from config import SELF_ID,TIMING_COF
 
 myUid = SELF_ID
-weaCof = WEATHER_COF
-soccerConf = SOCCER_COF
+weaCof = TIMING_COF["weather"]
+soccerConf = TIMING_COF["soccer"]
 
 # 天气预报
 def weaClock(hour,minus):

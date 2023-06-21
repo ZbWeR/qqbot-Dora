@@ -2,7 +2,7 @@ import re
 
 from config import ROOT_ID,SELF_ID
 from native_api import send_msg,RECALL_FLAG,get_msg
-from utils import openai_chat, weather, rand_pic,timing,real_dora
+from utils import openai_chat, weather, rand_pic,timing,real_dora,logger
 
 BASE_URL = 'http://127.0.0.1:5700/'
 
@@ -16,32 +16,24 @@ INSTR_LIST  = [
 ROOT_ID = ROOT_ID
 SELF_ID = SELF_ID
 
-REGEX = r"\[CQ:reply,id=([\-0-9]*)\]\[CQ:at,qq={}\] \[CQ:at,qq={}\] banned".format(SELF_ID, SELF_ID)
-
 # bot指令集
-def instruction(message,uid,gid=None,rol=None,mid=None):
-    global tmpPreSet,REGEX
+# def msg_handlers(message,uid,gid=None,role=None,message_id=None):
+def msg_handlers(data_dict):
+
+    message_id = data_dict.get('message_id')
+    message = data_dict.get('raw_message')
+    uid = data_dict.get('user_id')
+    gid = data_dict.get('group_id',None)
+    sender = data_dict.get('sender')
+    role = sender.get('role','member')
+
     repeat_msg_dict = {}  # 复读辅助集合
+
     try:
+        # 处理普通消息
         if message[0] != '~' and message[0] != '～':
-            # 如果可以复读就不要乱讲话了
-            if message=="" or handle_repeat (message,uid,gid,repeat_msg_dict):
-                return
-            # 判断是否是禁用命令
-            res = re.match(REGEX,message)
-            if res:
-                if rol == 'member' and uid!=ROOT_ID:
-                    return send_msg("Sorry,你没有该指令权限.",uid,gid)
-                msgId = res.group(1)
-                rawmsg = get_msg(msgId).get("data").get("message")
-                if rawmsg:
-                    real_dora.shutUp(rawmsg)
-                    send_msg("[CQ:reply,id={}] 不可以".format(msgId),uid,gid)
-                return
-            tmpMes = real_dora.Mewo(message,uid,gid)
-            if tmpMes != "SILENT":
-                send_msg(tmpMes,uid,gid)
-            return
+            return handle_common_msg(message,uid,gid,role,repeat_msg_dict)
+        
         errMsg = "抱歉,不存在 " + message + " 指令哦!"
         # 返回所有指令
         if message[1:5]=='help':
@@ -56,7 +48,7 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
         elif message[1:3]=='wd':
             if gid == None:
                 return send_msg("抱歉,该指令仅对群聊有效😭",uid,gid)
-            if rol == 'member':
+            if role == 'member':
                 return send_msg("Sorry,你没有该指令权限.",uid,gid)
             if message[4:6]=='on':
                 send_msg("该群聊已开启防撤回功能",uid,gid)
@@ -70,10 +62,10 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
         # ai对话相关
         elif message[1:5]=='chat':
             tmpMes = message[5:].lstrip();
-            if mid == None:
+            if message_id == None:
                 chatReply = openai_chat.chat(tmpMes,uid,gid)
             else:
-                chatReply = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(mid,uid) +openai_chat.chat(tmpMes,uid,gid)
+                chatReply = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(message_id,uid) +openai_chat.chat(tmpMes,uid,gid)
             send_msg(chatReply,uid,gid)
         elif message[1:6]=='clear':
             openai_chat.clear(uid,gid)
@@ -90,7 +82,7 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
         #     tmpMes = randPic.normal()
         #     send_msg(tmpMes,uid,gid) 
         elif message[1:5]=='setu':
-            tmpMes = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(mid,uid) + rand_pic.setu(message)
+            tmpMes = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(message_id,uid) + rand_pic.setu(message)
             send_msg(tmpMes,uid,gid)
         # 功能信息
         elif message[1:7]=='status':
@@ -107,7 +99,7 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
             tmpMes = weather.detailForecast(pos)
             send_msg(tmpMes,uid,gid)
         elif message[1:6]=='clock':
-            tmpMes = setClock(message,"weather")
+            tmpMes = set_clock(message,"weather")
             send_msg(tmpMes,uid,gid)
         elif message[1:5]=='warn':
             tmpMes = weather.warning()
@@ -115,7 +107,7 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
         # 约球
         elif message[1:7]=="soccer":
             if uid == ROOT_ID:
-                tmpMes = setClock(message,"soccer",15)
+                tmpMes = set_clock(message,"soccer",15)
                 send_msg(tmpMes,uid,gid)
             else:
                 send_msg("Sorry~没有权限哦",uid,gid)
@@ -126,6 +118,43 @@ def instruction(message,uid,gid=None,rol=None,mid=None):
             return send_msg(errMsg,uid,gid)
     except Exception as err:
         send_msg(str(err),uid,gid)
+
+def handle_common_msg(message,uid,gid,role,repeat_msg_dict={},):
+    """
+    处理非指令形式的普通信息: 1.复读 2.违禁词处理 3.随机发言
+
+    Args:
+        message (str): 消息内容。
+        uid (str): 用户ID。
+        gid (str, optional): 群组ID，默认为None。若为None，则不处理消息。
+        role (str): 用户在群聊中的身份,默认为成员
+        repeat_msg_dict (dict, optional): 重复消息字典，默认为空字典。该字典用于存储每个群组的重复消息信息。
+    """
+
+    # 私聊消息 或 消息为空 或 复读成功
+    if gid is None or message == "" or handle_repeat(message,uid,gid,repeat_msg_dict):
+        return
+    
+    # 违禁词设置
+    regex = r"\[CQ:reply,id=([\-0-9]*)\]\[CQ:at,qq={}\] \[CQ:at,qq={}\] 不可以".format(SELF_ID, SELF_ID)
+    res = re.match(regex,message)
+    if res:
+        # 用户没有执行权限
+        if role == 'member' and uid!=ROOT_ID:
+            return send_msg("Sorry,你没有该指令权限.",uid,gid)
+        
+        msg_id = res.group(1)
+        rawmsg = get_msg(msg_id).get("data").get("message")
+        if rawmsg:
+            real_dora.shutUp(rawmsg)
+            send_msg(f"[CQ:reply,id={msg_id}] banned",uid,gid)
+        return
+
+    # 随机发言
+    tmpMes = real_dora.Mewo(message,uid,gid)
+    if tmpMes != "SILENT":
+        send_msg(tmpMes,uid,gid)
+    return
 
 def handle_repeat(message, uid, gid=None,repeat_msg_dict={}):
     """
@@ -157,19 +186,14 @@ def handle_repeat(message, uid, gid=None,repeat_msg_dict={}):
         repeat_msg_dict[gid] = {'message': message, 'users': {uid}, 'repeated': False}
     return False
 
-
-# 功能信息
 def all_sta(uid,gid=None,repeat_msg_dict={}):
     """
-    获取群组状态信息并发送给指定用户
+    获取群组状态信息
 
     Args:
         uid: int, 指定用户的id
         gid: int, 群组id，默认为None
         repeat_msg_dict: dict, 群组复读信息字典，默认为None
-
-    Returns:
-        None
     """
     if gid is not None:
         withdraw_status = 'On' if gid in RECALL_FLAG else 'off'
@@ -179,8 +203,17 @@ def all_sta(uid,gid=None,repeat_msg_dict={}):
         tmpMes = f"防撤回状态: {withdraw_status}\n复读信息: {repeat_status}\n预报时间: {weaTime}"
         send_msg(tmpMes,uid,gid)
 
-# 设置预报的时间
-def setClock(message,type,offset=0):
+def set_clock(message,type,offset=0):
+    """
+    设置定时播报的时间
+
+    Args:
+        message: str, 指令原始内容
+        type: str, 播报消息的类别
+        offset: int, 时间偏移量
+    Returns:
+        str,回显信息
+    """
     try:
         pos = message.find(' ')
         arr = message[pos+1:].split(' ')
@@ -194,21 +227,19 @@ def setClock(message,type,offset=0):
         if (a < 0 or a >= 24 or b < 0 or b >= 60 or offset>=60):
             return '格式错误！'
 
-        tmpa = "0"+str(a) if a<10 else str(a)
-        tmpb = "0"+str(b) if b<10 else str(b)
+        tmpa = f"0{a}" if a < 10 else str(a)
+        tmpb = f"0{b}" if b < 10 else str(b)
 
-        if type == "weather":
-            timing.weaCof["enable"] = True
-            timing.weaCof["hour"] = a
-            timing.weaCof["minus"] = b
-            return "预报更新: {0}:{1}".format(tmpa,tmpb)
-            
-        elif type == "soccer":
-            timing.soccerConf["enable"] = True
-            timing.soccerConf["hour"] = a
-            timing.soccerConf["minus"] = b
-            # print("喵喵喵")
-            return "约球更新: {0}:{1}".format(tmpa,tmpb)
+        if type in timing.TIMING_COF:
+            timing.TIMING_COF[type].update({
+                "enable":True,
+                "hour":a,
+                "minus":b
+            })
+            return f"{type} updated: {tmpa}:{tmpb}"
+        else:
+            return "type not exist"
     except Exception as exc:
-        return '格式错误！' + str(exc)
+        logger.error(f"定时未知错误:{str(exc)}")
+        return '未知错误:' + str(exc)
     

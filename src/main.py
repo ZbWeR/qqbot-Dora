@@ -16,26 +16,17 @@ def post_data():
     """
     监听端口，获取QQ信息
     """
-    requ_text = request.get_json()
-    mid = requ_text.get('message_id')
+    response_dict = request.get_json()
+    post_type = response_dict.get('post_type')
 
-    if requ_text.get('post_type') == 'message':
+    # 消息上报: https://docs.go-cqhttp.org/event/#%E2%86%93-%E6%B6%88%E6%81%AF%E4%B8%8A%E6%8A%A5-%E2%86%93
+    if post_type == 'message':
+        api.msg_handlers(response_dict)
 
-        meg_type = requ_text.get('message_type')
-        uid = requ_text.get('sender').get('user_id')
-        msg = requ_text.get('raw_message')
-
-        # 判断消息类型,传入指令分析函数.
-        if meg_type == 'private':
-            isInstr = api.instruction(msg,uid)
-        elif meg_type == 'group':
-            rol = requ_text.get('sender').get('role')
-            gid = requ_text.get('group_id')
-            isInstr = api.instruction(msg,uid,gid,rol,mid)
-
-    elif requ_text.get('post_type') == 'notice':
-        # 防撤回
-        native_api.recall_msg(mid)
+    # 通知上报: https://docs.go-cqhttp.org/event/#%E2%86%93-%E9%80%9A%E7%9F%A5%E4%B8%8A%E6%8A%A5-%E2%86%93
+    # elif post_type == 'notice':
+    #     # 防撤回
+    #     native_api.recall_msg(mid)
     return 'OK'
 
 if __name__ == '__main__':
