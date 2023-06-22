@@ -79,13 +79,18 @@ def handle_instrustion(message,uid,gid,role,message_id):
         elif instr_type in ['chat','clear','preset','get','init']:
             ai_funcs(instr_type,message,uid,gid,message_id)
 
-        # 随机图片相关 api接口挂了,暂时关闭
-        # elif instr_type =='pic':
-        #     tmpMes = randPic.normal()
-        #     send_msg(tmpMes,uid,gid) 
+        # 随机图片相关
+        elif instr_type =='pic':
+            tmpMes = f"[CQ:reply,id={message_id}][CQ:at,qq={uid}] {rand_pic.get_normal_pic()}"
+            send_msg(tmpMes,uid,gid) 
         elif instr_type =='setu':
-            tmpMes = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(message_id,uid) + rand_pic.setu(message)
-            send_msg(tmpMes,uid,gid)
+            # TODO 批量色图存在发不出来的问题
+            # arr = message.split(' ')
+            # num = int(arr[1]) if len(arr) > 1 else 1
+            setu_list = rand_pic.get_setu(1)
+            for item in setu_list:
+                # tmpMes = f"[CQ:reply,id={message_id}][CQ:at,qq={uid}] {rand_pic.get_setu(num)}"
+                send_msg(item,uid,gid)
         
         # 功能信息
         # elif instr_type =='status':
@@ -117,7 +122,7 @@ def handle_instrustion(message,uid,gid,role,message_id):
             else:
                 send_msg("Sorry~没有权限哦",uid,gid)
         elif instr_type=="moyu":
-            tmpMes = rand_pic.moyuPic()
+            tmpMes = rand_pic.moyu_pic()
             send_msg(tmpMes,uid,gid)
         else:
             return send_msg(errMsg,uid,gid)
