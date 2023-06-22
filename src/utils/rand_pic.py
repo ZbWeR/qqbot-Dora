@@ -3,12 +3,6 @@ import random
 from utils.logger import logger
 # from logger import logger
 
-apiArr = [
-    'https://api.gmit.vip/Api/DmImg?format=json',
-    'https://api.lolicon.app/setu/v2',
-    'https://sex.nyan.xyz/api/v2/'
-    ]
-
 def get_setu(num):
     """
     获取色图的主函数
@@ -21,6 +15,12 @@ def get_setu(num):
         return get_sexy_pic_1(num)
     else:
         return get_sexy_pic_2(num)
+
+def get_pic():
+    if random.random() <= 0.5:
+        return get_normal_pic_1()
+    else:
+        return get_normal_pic_2()
 
 def generate_random_str(randomlength=8):
     """
@@ -35,7 +35,7 @@ def generate_random_str(randomlength=8):
     random_str = ''.join([base_str[random.randint(0, length)] for i in range(randomlength)])
     return random_str
 
-def get_normal_pic():
+def get_normal_pic_1():
     """
     获取正常的动漫图片
     """
@@ -53,10 +53,25 @@ def get_normal_pic():
     except Exception as e:
         logger.error(f"普通图片接口出错:{e}")
 
+def get_normal_pic_2():
+    url = 'https://api.r10086.com/%E6%A8%B1%E9%81%93%E9%9A%8F%E6%9C%BA%E5%9B%BE%E7%89%87api%E6%8E%A5%E5%8F%A3.php?%E8%87%AA%E9%80%82%E5%BA%94%E5%9B%BE%E7%89%87%E7%B3%BB%E5%88%97=%E5%8E%9F%E7%A5%9E'
+    baseurl = 'https://api.r10086.com/图包webp/原神横屏系列1/'
+    headers={
+        'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 Edg/114.0.1823.51'
+    }
+    try:    
+        res = requests.get(url,headers=headers)
+        # 重定向历史中找到目标url
+        loc = res.history[0].headers.get('Location')
+        usefulloc = loc[loc.find('wallhaven'):]
+        return f"[CQ:image,file={generate_random_str()}.image,subType=0,url={baseurl+usefulloc}]"
+    except Exception as e:
+        logger.error(f"普通图片接口出错:{e}")
+        return '⚠️接口访问出错啦!'
+
 def get_sexy_pic_1(num=1):
     """
     获取色图
-
     Args:
         num: int,图片的数量
     Returns:

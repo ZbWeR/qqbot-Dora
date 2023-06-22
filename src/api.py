@@ -81,7 +81,7 @@ def handle_instrustion(message,uid,gid,role,message_id):
 
         # 随机图片相关
         elif instr_type =='pic':
-            tmpMes = f"[CQ:reply,id={message_id}][CQ:at,qq={uid}] {rand_pic.get_normal_pic()}"
+            tmpMes = rand_pic.get_pic()
             send_msg(tmpMes,uid,gid) 
         elif instr_type =='setu':
             # TODO 批量色图存在发不出来的问题
