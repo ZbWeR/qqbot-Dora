@@ -2,7 +2,9 @@ import re
 
 from config import ROOT_ID,SELF_ID
 from native_api import send_msg,RECALL_FLAG,get_msg
-from utils import openai_chat, weather, rand_pic,timing,real_dora,logger
+from utils import weather, rand_pic,timing,real_dora
+from utils.openai_chat import openai_chat
+from utils.logger import logger
 
 BASE_URL = 'http://127.0.0.1:5700/'
 
@@ -30,22 +32,35 @@ def msg_handlers(data_dict):
     repeat_msg_dict = {}  # 复读辅助集合
 
     try:
-        # 处理普通消息
+        # 普通消息
         if message[0] != '~' and message[0] != '～':
             return handle_common_msg(message,uid,gid,role,repeat_msg_dict)
-        
+        # 指令
+        handle_instrustion(message,uid,gid,role,message_id)
         errMsg = "抱歉,不存在 " + message + " 指令哦!"
-        # 返回所有指令
-        if message[1:5]=='help':
+
+    except Exception as err:
+        send_msg(str(err),uid,gid)
+
+def handle_instrustion(message,uid,gid,role,message_id):
+    try:
+        # 提取指令类型
+        pattern = r'^~(\w+)\s*'
+        instr_type = re.match(pattern,message).group(1)
+        print(f"------{instr_type}----------")
+
+        # 帮助手册
+        if instr_type =='help':
             tmpMes = '\n'.join(INSTR_LIST )
-            # print(message)
             send_msg(tmpMes,uid,gid)
+
         # 返回指定内容
-        elif message[1:7]=='return':
+        elif instr_type =='return':
             tmpMes = message.replace('~return','').lstrip()
             send_msg(tmpMes,uid,gid)
-        # 防撤回开关
-        elif message[1:3]=='wd':
+
+        # 防撤回
+        elif instr_type == 'wd':
             if gid == None:
                 return send_msg("抱歉,该指令仅对群聊有效😭",uid,gid)
             if role == 'member':
@@ -57,69 +72,100 @@ def msg_handlers(data_dict):
                 if RECALL_FLAG.__contains__(gid):
                     del RECALL_FLAG[gid]
                 send_msg("防撤回功能已关闭",uid,gid)
+            # TODO
             else:
                 send_msg(errMsg,uid,gid)
+
         # ai对话相关
-        elif message[1:5]=='chat':
-            tmpMes = message[5:].lstrip();
-            if message_id == None:
-                chatReply = openai_chat.chat(tmpMes,uid,gid)
-            else:
-                chatReply = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(message_id,uid) +openai_chat.chat(tmpMes,uid,gid)
-            send_msg(chatReply,uid,gid)
-        elif message[1:6]=='clear':
-            openai_chat.clear(uid,gid)
-            send_msg('已重置对话🥰',uid,gid)
-        elif message[1:4]=='get':
-            tmpMes = openai_chat.get(uid,gid)
-            send_msg(repr(tmpMes),uid,gid)
-        elif message[1:7]=='preset':
-            tmpMes = message[7:].lstrip()
-            openai_chat.preset(tmpMes,uid,gid)
-            send_msg('预设成功🏃',uid,gid)
+        elif instr_type in ['chat','clear','preset','get','init']:
+            ai_funcs(instr_type,message,uid,gid,message_id)
+
         # 随机图片相关 api接口挂了,暂时关闭
-        # elif message[1:4]=='pic':
+        # elif instr_type =='pic':
         #     tmpMes = randPic.normal()
         #     send_msg(tmpMes,uid,gid) 
-        elif message[1:5]=='setu':
+        elif instr_type =='setu':
             tmpMes = '[CQ:reply,id={0}][CQ:at,qq={1}] '.format(message_id,uid) + rand_pic.setu(message)
             send_msg(tmpMes,uid,gid)
+        
         # 功能信息
-        elif message[1:7]=='status':
+        elif instr_type =='status':
             all_sta(uid,gid,repeat_msg_dict)
+        
         # 天气相关
-        elif message =='~briefForecast':
+        elif instr_type =='briefForecast':
             tmpMes = weather.briefForecast()
             warning = weather.warning()
             send_msg(tmpMes,uid,gid)
             if warning!='No Warning':
                 send_msg(warning,uid,gid)
-        elif message[1:4]=='wea':
+        elif instr_type=='wea':
             pos = message[4:].lstrip();
             tmpMes = weather.detailForecast(pos)
             send_msg(tmpMes,uid,gid)
-        elif message[1:6]=='clock':
+        elif instr_type=='clock':
             tmpMes = set_clock(message,"weather")
             send_msg(tmpMes,uid,gid)
-        elif message[1:5]=='warn':
+        elif instr_type=='warn':
             tmpMes = weather.warning()
             send_msg(tmpMes,uid,gid)
+        
         # 约球
-        elif message[1:7]=="soccer":
+        elif instr_type=="soccer":
             if uid == ROOT_ID:
                 tmpMes = set_clock(message,"soccer",15)
                 send_msg(tmpMes,uid,gid)
             else:
                 send_msg("Sorry~没有权限哦",uid,gid)
-        elif message[1:5]=="moyu":
+        elif instr_type=="moyu":
             tmpMes = rand_pic.moyuPic()
             send_msg(tmpMes,uid,gid)
         else:
             return send_msg(errMsg,uid,gid)
-    except Exception as err:
-        send_msg(str(err),uid,gid)
+    except Exception as e:
+        logger.error(f"处理指令出错:{str(e)}")
 
-def handle_common_msg(message,uid,gid,role,repeat_msg_dict={},):
+def ai_funcs(instr_type,message,uid,gid=None,message_id=None):
+    reply_type = {
+        'clear': '已重置对话🥰',
+        'preset': '预设成功🏃',
+        'chat': '请稍后再试💦',
+        'get': '喵喵喵o.O?',
+        'init': '格式化完毕🚀'
+    }
+    reply_content = reply_type.get(instr_type)
+    try:
+        # 聊天
+        if instr_type == 'chat':
+            tmpMes = message[5:].lstrip()
+            if message_id is None:
+                reply_content = openai_chat.chat(tmpMes,uid,gid)
+            else:
+                reply_content = f'[CQ:reply,id={message_id}][CQ:at,qq={uid}] ' + openai_chat.chat(tmpMes,uid,gid)
+        
+        # 清空消息缓存
+        elif instr_type =='clear':
+            openai_chat.clear(uid,gid)
+
+        # 获取消息历史
+        elif instr_type =='get':
+            tmpMes = openai_chat.get(uid,gid)
+            reply_content = repr(tmpMes)
+        
+        # 预设人格
+        elif instr_type =='preset':
+            tmpMes = message[7:].lstrip()
+            openai_chat.preset(tmpMes,uid,gid)
+
+        elif instr_type == 'init':
+            openai_chat.init(uid,gid)
+
+        return send_msg(reply_content,uid,gid)
+    except Exception as e:
+        logger.error(f"对话指令出错{e}")
+        return send_msg(str(e))
+
+def handle_common_msg(message,uid,gid,role,repeat_msg_dict={}):
     """
     处理非指令形式的普通信息: 1.复读 2.违禁词处理 3.随机发言
 
