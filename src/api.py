@@ -37,12 +37,12 @@ def msg_handlers(data_dict):
             return handle_common_msg(message,uid,gid,role,repeat_msg_dict)
         # 指令
         handle_instrustion(message,uid,gid,role,message_id)
-        errMsg = "抱歉,不存在 " + message + " 指令哦!"
-
     except Exception as err:
+        logger.error(f"总处理函数出错:{str(err)}")
         send_msg(str(err),uid,gid)
 
 def handle_instrustion(message,uid,gid,role,message_id):
+    errMsg = "Sorry,指令有误哦~"
     try:
         # 提取指令类型
         pattern = r'^~(\w+)\s*'
@@ -72,7 +72,6 @@ def handle_instrustion(message,uid,gid,role,message_id):
                 if RECALL_FLAG.__contains__(gid):
                     del RECALL_FLAG[gid]
                 send_msg("防撤回功能已关闭",uid,gid)
-            # TODO
             else:
                 send_msg(errMsg,uid,gid)
 
@@ -89,8 +88,8 @@ def handle_instrustion(message,uid,gid,role,message_id):
             send_msg(tmpMes,uid,gid)
         
         # 功能信息
-        elif instr_type =='status':
-            all_sta(uid,gid,repeat_msg_dict)
+        # elif instr_type =='status':
+        #     all_sta(uid,gid,repeat_msg_dict)
         
         # 天气相关
         elif instr_type =='briefForecast':
@@ -126,6 +125,18 @@ def handle_instrustion(message,uid,gid,role,message_id):
         logger.error(f"处理指令出错:{str(e)}")
 
 def ai_funcs(instr_type,message,uid,gid=None,message_id=None):
+    """
+    与openai相关的指令处理,包括对话 / 预设 / 清理缓存
+    
+    Args:
+        instr_type: str, 指令类型
+        message: str, 消息内容,用于对话或预设
+        gid: str, 群聊编号
+        message_id: str, 消息编号,用于回复
+    Returns:
+        send_msg: func, 发送回显消息
+    """
+
     reply_type = {
         'clear': '已重置对话🥰',
         'preset': '预设成功🏃',
@@ -162,7 +173,7 @@ def ai_funcs(instr_type,message,uid,gid=None,message_id=None):
 
         return send_msg(reply_content,uid,gid)
     except Exception as e:
-        logger.error(f"对话指令出错{e}")
+        logger.error(f"ai对话指令出错{e}")
         return send_msg(str(e))
 
 def handle_common_msg(message,uid,gid,role,repeat_msg_dict={}):
@@ -177,30 +188,34 @@ def handle_common_msg(message,uid,gid,role,repeat_msg_dict={}):
         repeat_msg_dict (dict, optional): 重复消息字典，默认为空字典。该字典用于存储每个群组的重复消息信息。
     """
 
-    # 私聊消息 或 消息为空 或 复读成功
-    if gid is None or message == "" or handle_repeat(message,uid,gid,repeat_msg_dict):
-        return
-    
-    # 违禁词设置
-    regex = r"\[CQ:reply,id=([\-0-9]*)\]\[CQ:at,qq={}\] \[CQ:at,qq={}\] 不可以".format(SELF_ID, SELF_ID)
-    res = re.match(regex,message)
-    if res:
-        # 用户没有执行权限
-        if role == 'member' and uid!=ROOT_ID:
-            return send_msg("Sorry,你没有该指令权限.",uid,gid)
+    try:
+        # 私聊消息 或 消息为空 或 复读成功
+        if gid is None or message == "" or handle_repeat(message,uid,gid,repeat_msg_dict):
+            return
         
-        msg_id = res.group(1)
-        rawmsg = get_msg(msg_id).get("data").get("message")
-        if rawmsg:
-            real_dora.shutUp(rawmsg)
-            send_msg(f"[CQ:reply,id={msg_id}] banned",uid,gid)
-        return
+        # 违禁词设置
+        regex = r"\[CQ:reply,id=([\-0-9]*)\]\[CQ:at,qq={}\] \[CQ:at,qq={}\] 不可以".format(SELF_ID, SELF_ID)
+        res = re.match(regex,message)
+        if res:
+            # 用户没有执行权限
+            if role == 'member' and uid!=ROOT_ID:
+                return send_msg("Sorry,你没有该指令权限.",uid,gid)
+            
+            msg_id = res.group(1)
+            rawmsg = get_msg(msg_id).get("data").get("message")
+            if rawmsg:
+                real_dora.shutUp(rawmsg)
+                send_msg(f"[CQ:reply,id={msg_id}] banned",uid,gid)
+            return
 
-    # 随机发言
-    tmpMes = real_dora.Mewo(message,uid,gid)
-    if tmpMes != "SILENT":
-        send_msg(tmpMes,uid,gid)
-    return
+        # 随机发言
+        tmpMes = real_dora.Mewo(message,uid,gid)
+        if tmpMes != "SILENT":
+            send_msg(tmpMes,uid,gid)
+        return
+    except Exception as e:
+        logger.error(f"处理普通信息出错:{e}")
+        return
 
 def handle_repeat(message, uid, gid=None,repeat_msg_dict={}):
     """
@@ -215,22 +230,26 @@ def handle_repeat(message, uid, gid=None,repeat_msg_dict={}):
     Returns:
         bool: 是否进行复读。
     """
-    if gid is None:
-        return False
+    try:
+        if gid is None:
+            return False
 
-    if gid in repeat_msg_dict:
-        repeat_info = repeat_msg_dict[gid]
-        if message == repeat_info['message'] and uid not in repeat_info['users']:
-            repeat_info['users'].add(uid)
-            if len(repeat_info['users']) == 3 and not repeat_info['repeated']:
-                send_msg(repeat_info['message'], uid, gid)
-                repeat_info['repeated'] = True
-                return True
+        if gid in repeat_msg_dict:
+            repeat_info = repeat_msg_dict[gid]
+            if message == repeat_info['message'] and uid not in repeat_info['users']:
+                repeat_info['users'].add(uid)
+                if len(repeat_info['users']) == 3 and not repeat_info['repeated']:
+                    send_msg(repeat_info['message'], uid, gid)
+                    repeat_info['repeated'] = True
+                    return True
+            else:
+                repeat_msg_dict[gid] = {'message': message, 'users': {uid}, 'repeated': False}
         else:
             repeat_msg_dict[gid] = {'message': message, 'users': {uid}, 'repeated': False}
-    else:
-        repeat_msg_dict[gid] = {'message': message, 'users': {uid}, 'repeated': False}
-    return False
+        return False
+    except Exception as e:
+        logger.error(f"复读出错:{e}")
+        return False
 
 def all_sta(uid,gid=None,repeat_msg_dict={}):
     """
