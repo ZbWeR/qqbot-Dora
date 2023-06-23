@@ -14,7 +14,7 @@ soccerConf = TIMING_COF["soccer"]
 def weaClock(hour,minus):
     if hour==weaCof["hour"] and minus==weaCof["minus"]:
         # print("@@@@@@@@@@@@@")
-        tmpMes = weather.briefForecast()
+        tmpMes = weather.brief_forecast()
         for group in weaCof["groups"]:
             send_msg(tmpMes,myUid,group)
 
@@ -23,7 +23,7 @@ def weaClock(hour,minus):
             for group in weaCof["groups"]:
                 send_msg(warning,myUid,group)
         
-        tmpMes = rand_pic.moyuPic()
+        tmpMes = rand_pic.moyu_pic()
         for group in weaCof["groups"]:
             send_msg(tmpMes,myUid,group)
 

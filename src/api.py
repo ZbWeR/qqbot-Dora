@@ -4,7 +4,7 @@ from config import ROOT_ID,SELF_ID
 from native_api import send_msg,RECALL_FLAG,get_msg
 from utils import weather, rand_pic,timing,real_dora
 from utils.openai_chat import openai_chat
-from utils.logger import logger
+from utils.logger import dora_log
 
 BASE_URL = 'http://127.0.0.1:5700/'
 
@@ -38,7 +38,7 @@ def msg_handlers(data_dict):
         # 指令
         handle_instrustion(message,uid,gid,role,message_id)
     except Exception as err:
-        logger.error(f"总处理函数出错:{str(err)}")
+        dora_log.error(f"总处理函数出错:{str(err)}")
         send_msg(str(err),uid,gid)
 
 def handle_instrustion(message,uid,gid,role,message_id):
@@ -97,15 +97,15 @@ def handle_instrustion(message,uid,gid,role,message_id):
         #     all_sta(uid,gid,repeat_msg_dict)
         
         # 天气相关
-        elif instr_type =='briefForecast':
-            tmpMes = weather.briefForecast()
+        elif instr_type =='brief_forecast':
+            tmpMes = weather.brief_forecast()
             warning = weather.warning()
             send_msg(tmpMes,uid,gid)
             if warning!='No Warning':
                 send_msg(warning,uid,gid)
         elif instr_type=='wea':
             pos = message[4:].lstrip();
-            tmpMes = weather.detailForecast(pos)
+            tmpMes = weather.detail_forecast(pos)
             send_msg(tmpMes,uid,gid)
         elif instr_type=='clock':
             tmpMes = set_clock(message,"weather")
@@ -127,7 +127,7 @@ def handle_instrustion(message,uid,gid,role,message_id):
         else:
             return send_msg(errMsg,uid,gid)
     except Exception as e:
-        logger.error(f"处理指令出错:{str(e)}")
+        dora_log.error(f"处理指令出错:{str(e)}")
 
 def ai_funcs(instr_type,message,uid,gid=None,message_id=None):
     """
@@ -178,7 +178,7 @@ def ai_funcs(instr_type,message,uid,gid=None,message_id=None):
 
         return send_msg(reply_content,uid,gid)
     except Exception as e:
-        logger.error(f"ai对话指令出错{e}")
+        dora_log.error(f"ai对话指令出错{e}")
         return send_msg(str(e))
 
 def handle_common_msg(message,uid,gid,role,repeat_msg_dict={}):
@@ -219,7 +219,7 @@ def handle_common_msg(message,uid,gid,role,repeat_msg_dict={}):
             send_msg(tmpMes,uid,gid)
         return
     except Exception as e:
-        logger.error(f"处理普通信息出错:{e}")
+        dora_log.error(f"处理普通信息出错:{e}")
         return
 
 def handle_repeat(message, uid, gid=None,repeat_msg_dict={}):
@@ -253,7 +253,7 @@ def handle_repeat(message, uid, gid=None,repeat_msg_dict={}):
             repeat_msg_dict[gid] = {'message': message, 'users': {uid}, 'repeated': False}
         return False
     except Exception as e:
-        logger.error(f"复读出错:{e}")
+        dora_log.error(f"复读出错:{e}")
         return False
 
 def all_sta(uid,gid=None,repeat_msg_dict={}):
@@ -310,6 +310,6 @@ def set_clock(message,type,offset=0):
         else:
             return "type not exist"
     except Exception as exc:
-        logger.error(f"定时未知错误:{str(exc)}")
+        dora_log.error(f"定时未知错误:{str(exc)}")
         return '未知错误:' + str(exc)
     

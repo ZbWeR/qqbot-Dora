@@ -1,6 +1,6 @@
 import openai
 from config import OPENAI_API_KEY
-from utils import logger
+from utils.logger import dora_log
 
 class chatBot:
     def __init__(self) -> None:
@@ -49,7 +49,7 @@ class chatBot:
             self.group_preset[tgid if gid else uid] = prompt
             return resp_cont
         except Exception as exc:
-            logger.error(f"调用openai出错:{exc}")
+            dora_log.error(f"调用openai出错:{exc}")
             return str(exc)
         
     def get(self,uid,gid=None):

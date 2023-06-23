@@ -1,6 +1,6 @@
 import requests
 from urllib import parse
-from utils.logger import logger
+from utils.logger import dora_log
 
 BASE_URL = 'http://127.0.0.1:5700/'
 NO_PROXY = { "http": None, "https": None}
@@ -27,7 +27,7 @@ def send_msg(message,uid,gid=None):
         response = requests.get(url=payload,proxies=NO_PROXY)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        logger.error(f"发送消息失败: {str(e)}")
+        dora_log.error(f"发送消息失败: {str(e)}")
     return
 
 def get_msg(mid):
@@ -45,7 +45,7 @@ def get_msg(mid):
         response = requests.get(url=payload,proxies=NO_PROXY)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        logger.error(f"获取消息失败: {str(e)}")
+        dora_log.error(f"获取消息失败: {str(e)}")
         return None
     return response.json()
 

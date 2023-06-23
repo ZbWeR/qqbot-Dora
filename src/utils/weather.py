@@ -2,80 +2,93 @@ import requests
 
 from config import WEATHER_API_KEY
 
-locationid = '101270107'
-# baseUrl = 'https://devapi.qweather.com/v7/'
-baseUrl = 'https://api.qweather.com/v7/'
-apikey = WEATHER_API_KEY
-
-no_proxy = {
+LOCATION_ID = '101270107'
+# BASE_URL = 'https://devapi.qweather.com/v7/'
+BASE_URL = 'https://api.qweather.com/v7/'
+APIKEY = WEATHER_API_KEY
+NO_PROXY = {
     "http": None,
     "https": None,
 }
 
-# 获取地区编号
-def getLoc(pos):
-    url = 'https://geoapi.qweather.com/v2/city/lookup?location={0}&key={1}'.format(pos,apikey)
-    res = requests.get(url,proxies=no_proxy).json()
+def get_location_id(pos):
+    """
+    获取地区编号
+
+    Args:
+        pos: str, 地区或城市名称
+    Returns:
+        location_id: str, 对应的地区编号
+    """
+    url = f'https://geoapi.qweather.com/v2/city/lookup?location={pos}&key={APIKEY}'
+    res = requests.get(url,proxies=NO_PROXY).json()
     if res.get('code')!='200':
         return str(res)
     else:
-        locID = res.get('location')[0].get('id')
-    return str(locID)
+        location_id = res.get('location')[0].get('id')
+    return str(location_id)
 
-# 大致预报
-def briefForecast():
-    url = baseUrl + 'weather/3d?location={0}&key={1}'.format(locationid,apikey)
-    res = requests.get(url,proxies=no_proxy).json().get('daily')[0]
+def brief_forecast():
+    """
+    简洁版本的每日天气预报
+
+    Returns:
+        str, 简短的天气预报
+    """
+    url = f'{BASE_URL}weather/3d?location={LOCATION_ID}&key={APIKEY}'
+    res = requests.get(url,proxies=NO_PROXY).json().get('daily')[0]
     tmpMax = res.get('tempMax')
     tmpMin = res.get('tempMin')
     dayText = res.get('textDay')
     nigText = res.get('textNight')
     precip = res.get('precip')
-    mes = '🎯  今日天气预报 🐳 \n 降雨: {4}\n 气温: {0}℃ - {1}℃\n 天气: {2}(日 )/ {3}(夜)'.format(
-        tmpMin,tmpMax,dayText,nigText,precip
-    )
-    # print(mes)
-    return mes
+    return f'🎯  今日天气预报 🐳 \n 降雨: {precip}\n 气温: {tmpMin}℃ - {tmpMax}℃\n 天气: {dayText}(日 )/ {nigText}(夜)'
+    # TODO 异常处理
 
-# 详细预报
-def detailForecast(pos=''):
+def detail_forecast(pos=''):
+    """
+    获取 6 小时内的详细天气预报
+
+    Args:
+        pos: str, 地区或城市名称
+    Returns:
+        str, 天气预报文案
+    """
     if pos =='':
-        loc = locationid
+        loc = LOCATION_ID
         pos = '郫都'
     else:
-        loc = getLoc(pos)
-        print(loc,type(loc))
-        if loc.isdigit()==False:
+        loc = get_location_id(pos)
+        if not loc.isdigit():
             return loc
     try:
         # 获取实时天气
-        url = baseUrl + 'weather/now?location={0}&key={1}'.format(loc,apikey)
-        res = requests.get(url,proxies=no_proxy).json().get('now')
+        url = f'{BASE_URL}weather/now?location={loc}&key={APIKEY}'
+        res = requests.get(url,proxies=NO_PROXY).json().get('now')
         mes = []
-        mes.append('当前：{0}℃ / {1}'.format(res['temp'],res['text']));
+        mes.append(f'当前：: {res["temp"]}℃ / {res["text"]}')
         # 获取逐小时预报
-        url = baseUrl + 'weather/24h?location={0}&key={1}'.format(loc,apikey)
-        resJson = requests.get(url,proxies=no_proxy).json()
+        url = f'{BASE_URL}weather/24h?location={loc}&key={APIKEY}'
+        resJson = requests.get(url,proxies=NO_PROXY).json()
         res = resJson.get('hourly')
         for i in range(6):
             tmpTime = res[i].get('fxTime').split('T')
             tmpTime = tmpTime[1].split('+')[0]
             temp = res[i].get('temp')
             text = res[i].get('text')
-            mes.append('{0}  {1}℃ / {2}'.format(tmpTime,temp,text))
+            mes.append(f'{tmpTime}  {temp}℃ / {text}')
         updateTime = resJson.get('updateTime')[11:16] # 取出具体时间
-        return '☁️  逐小时天气预报 🌞\n' + '地区:  {0}\n'.format(pos) + \
+        return f'☁️  逐小时天气预报 🌞\n' + '地区:  {pos}\n' + \
             '\n'.join(mes) + '\n更新时间: ' + updateTime
     except Exception as e:
         return str(e)
 
-# 天气预警
-# https://devapi.qweather.com/v7/warning/now?location=101270107&key=12f3889347564f5f94d84c99e20ae08e
-
 def warning():
-    url = baseUrl + 'warning/now?location={0}&key={1}'.format(locationid,apikey)
-    # print(url)
-    res = requests.get(url,proxies=no_proxy).json().get('warning')
-    if len(res)==0:
+    """
+    获取天气预警信息
+    """
+    url = f'{BASE_URL}warning/now?location={LOCATION_ID}&key={APIKEY}'
+    res = requests.get(url,proxies=NO_PROXY).json().get('warning')
+    if not res:
         return 'No Warning'
     return res[0].get('text')

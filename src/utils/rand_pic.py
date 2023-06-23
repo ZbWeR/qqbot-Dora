@@ -1,7 +1,7 @@
 import requests
 import random
-from utils.logger import logger
-# from logger import logger
+from utils.logger import dora_log
+# from dora_log import dora_log
 
 def get_setu(num):
     """
@@ -51,7 +51,7 @@ def get_normal_pic_1():
             return f'[CQ:image,file={generate_random_str()}.image,subType=0,url={resUrl}]'
         return '⚠️访问出错啦!\n' + 'Status Code: '+code
     except Exception as e:
-        logger.error(f"普通图片接口出错:{e}")
+        dora_log.error(f"普通图片接口出错:{e}")
 
 def get_normal_pic_2():
     url = 'https://api.r10086.com/%E6%A8%B1%E9%81%93%E9%9A%8F%E6%9C%BA%E5%9B%BE%E7%89%87api%E6%8E%A5%E5%8F%A3.php?%E8%87%AA%E9%80%82%E5%BA%94%E5%9B%BE%E7%89%87%E7%B3%BB%E5%88%97=%E5%8E%9F%E7%A5%9E'
@@ -66,7 +66,7 @@ def get_normal_pic_2():
         usefulloc = loc[loc.find('wallhaven'):]
         return f"[CQ:image,file={generate_random_str()}.image,subType=0,url={baseurl+usefulloc}]"
     except Exception as e:
-        logger.error(f"普通图片接口出错:{e}")
+        dora_log.error(f"普通图片接口出错:{e}")
         return '⚠️接口访问出错啦!'
 
 def get_sexy_pic_1(num=1):
@@ -84,7 +84,7 @@ def get_sexy_pic_1(num=1):
         cont = [f"[CQ:image,file={generate_random_str()}.image,subType=0,url={item['urls']['original']}]" for item in res_url]
         return cont
     except Exception as e:
-        logger.error(f"色图接口出错:{e}")
+        dora_log.error(f"色图接口出错:{e}")
         return '⚠️接口访问出错啦!'
 
 def get_sexy_pic_2(num=1):
@@ -96,7 +96,7 @@ def get_sexy_pic_2(num=1):
         cont = [f"[CQ:image,file={generate_random_str()}.image,subType=0,url={item}]"for item in res_url]
         return cont
     except Exception as e:
-        logger.error(f"色图接口出错:{e}")
+        dora_log.error(f"色图接口出错:{e}")
         return '⚠️接口访问出错啦!'
 
 def moyu_pic():
@@ -109,5 +109,5 @@ def moyu_pic():
         resUrl = res["data"]["moyu_url"]
         return f'[CQ:image,file={generate_random_str()}.image,subType=0,url={resUrl}]'
     except Exception as e:
-        logger.error(f"摸鱼接口出错:{e}")
+        dora_log.error(f"摸鱼接口出错:{e}")
         return '⚠️接口访问出错啦!'
