@@ -1,11 +1,13 @@
 import re
+import random
 
 from config import ROOT_ID,SELF_ID
-from native_api import send_msg,RECALL_FLAG,get_msg
+from native_api import send_msg,RECALL_FLAG,get_msg,recall_msg
 from utils import weather, rand_pic,timing
 from utils.openai_chat import openai_chat
 from utils.real_dora import dora_bot
 from utils.logger import dora_log
+from utils.cq_code import poke
 
 BASE_URL = 'http://127.0.0.1:5700/'
 
@@ -19,10 +21,13 @@ INSTR_LIST  = [
 ROOT_ID = ROOT_ID
 SELF_ID = SELF_ID
 
-# bot指令集
-# def msg_handlers(message,uid,gid=None,role=None,message_id=None):
 def msg_handlers(data_dict):
+    """
+    消息处理总控制函数
 
+    Args:
+        data_dict: obj, 包含各种信息的字典
+    """
     message_id = data_dict.get('message_id')
     message = data_dict.get('raw_message')
     uid = data_dict.get('user_id')
@@ -43,6 +48,17 @@ def msg_handlers(data_dict):
         send_msg(str(err),uid,gid)
 
 def handle_instrustion(message,uid,gid,role,message_id):
+    """
+    处理指令形式信息: 
+
+    Args:
+        message (str): 消息内容。
+        uid (str): 用户ID。
+        gid (str, optional): 群组ID，默认为None。若为None，则不处理消息。
+        role (str): 用户在群聊中的身份,默认为成员
+        message_id (str): 消息id.
+    """
+
     errMsg = "Sorry,指令有误哦~"
     permission_msg = "Sorry,你没有该指令权限."
     try:
@@ -320,4 +336,33 @@ def set_clock(message,type,offset=0):
     except Exception as exc:
         dora_log.error(f"定时未知错误:{str(exc)}")
         return '定时未知错误:' + str(exc)
+
+RECALL_REPLY = ['森莫o.O?','没看到再来一次','坏坏坏！忘记开防撤回了']
+def notice_handle(data_dict):
+    """
+    通知处理总控制函数
+
+    Args:
+        data_dict: obj, 包含各种信息的字典
+    """
+    notice_type = data_dict.get('notice_type')
+    uid = data_dict.get('user_id',None)
+    gid = data_dict.get('group_id',None)
+    message_id = data_dict.get('message_id',None)
+
+    if notice_type == 'group_recall':
+        if recall_msg(message_id):
+            return
+        type = random.random()
+        if type<=0.3:
+            send_msg(RECALL_REPLY[random.randint(0,len(RECALL_REPLY)-1)],uid,gid)
+        elif type<=0.4:
+            poke(uid)
     
+    elif notice_type =='group_ban':
+        type = random.random()
+        if type<=0.3:
+            send_msg('好似',uid,gid)
+
+        
+

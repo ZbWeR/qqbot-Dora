@@ -24,9 +24,8 @@ def post_data():
         api.msg_handlers(response_dict)
 
     # 通知上报: https://docs.go-cqhttp.org/event/#%E2%86%93-%E9%80%9A%E7%9F%A5%E4%B8%8A%E6%8A%A5-%E2%86%93
-    # elif post_type == 'notice':
-    #     # 防撤回
-    #     native_api.recall_msg(mid)
+    elif post_type == 'notice':
+        api.notice_handle(response_dict)
     return 'OK'
 
 if __name__ == '__main__':

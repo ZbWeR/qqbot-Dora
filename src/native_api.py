@@ -63,6 +63,8 @@ def recall_msg(mid):
     
     Args:
         mid(str): 消息id
+    Returns:
+        boolean, 是否执行了防撤回操作
     """
     message = get_msg(mid).get('data')
     if message is None:
@@ -73,3 +75,5 @@ def recall_msg(mid):
     if gid in RECALL_FLAG and RECALL_FLAG[gid] == 1:
         new_message = "不准撤回😡!\n{}:".format(nickname) + message.get('message').replace('不准撤回😡!\n', '')
         send_msg(new_message,uid,gid)
+        return True
+    return False
