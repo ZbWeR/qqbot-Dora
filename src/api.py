@@ -2,8 +2,9 @@ import re
 
 from config import ROOT_ID,SELF_ID
 from native_api import send_msg,RECALL_FLAG,get_msg
-from utils import weather, rand_pic,timing,real_dora
+from utils import weather, rand_pic,timing
 from utils.openai_chat import openai_chat
+from utils.real_dora import dora_bot
 from utils.logger import dora_log
 
 BASE_URL = 'http://127.0.0.1:5700/'
@@ -43,6 +44,7 @@ def msg_handlers(data_dict):
 
 def handle_instrustion(message,uid,gid,role,message_id):
     errMsg = "Sorry,指令有误哦~"
+    permission_msg = "Sorry,你没有该指令权限."
     try:
         # 提取指令类型
         pattern = r'^~(\w+)\s*'
@@ -64,7 +66,7 @@ def handle_instrustion(message,uid,gid,role,message_id):
             if gid == None:
                 return send_msg("抱歉,该指令仅对群聊有效😭",uid,gid)
             if role == 'member':
-                return send_msg("Sorry,你没有该指令权限.",uid,gid)
+                return send_msg(permission_msg,uid,gid)
             if message[4:6]=='on':
                 send_msg("该群聊已开启防撤回功能",uid,gid)
                 RECALL_FLAG[gid] = 1
@@ -85,9 +87,10 @@ def handle_instrustion(message,uid,gid,role,message_id):
             send_msg(tmpMes,uid,gid) 
         elif instr_type =='setu':
             # TODO 批量色图存在发不出来的问题
-            # arr = message.split(' ')
-            # num = int(arr[1]) if len(arr) > 1 else 1
-            setu_list = rand_pic.get_setu(1)
+            arr = message.split(' ')
+            num = int(arr[1]) if len(arr) > 1 else 1
+            num = 1 if gid else num
+            setu_list = rand_pic.get_setu(num)
             for item in setu_list:
                 # tmpMes = f"[CQ:reply,id={message_id}][CQ:at,qq={uid}] {rand_pic.get_setu(num)}"
                 send_msg(item,uid,gid)
@@ -98,21 +101,26 @@ def handle_instrustion(message,uid,gid,role,message_id):
         
         # 天气相关
         elif instr_type =='brief_forecast':
-            tmpMes = weather.brief_forecast()
+            # 每日天气预报
+            weather_message = weather.brief_forecast()
+            send_msg(weather_message,uid,gid)
+
             warning = weather.warning()
-            send_msg(tmpMes,uid,gid)
             if warning!='No Warning':
                 send_msg(warning,uid,gid)
         elif instr_type=='wea':
-            pos = message[4:].lstrip();
-            tmpMes = weather.detail_forecast(pos)
-            send_msg(tmpMes,uid,gid)
+            # 6 小时内天气预报
+            position = message[4:].lstrip()
+            weather_message = weather.detail_forecast(position)
+            send_msg(weather_message, uid, gid)
         elif instr_type=='clock':
-            tmpMes = set_clock(message,"weather")
-            send_msg(tmpMes,uid,gid)
+            # 天气定时播报
+            clock_message = set_clock(message,"weather")
+            send_msg(clock_message,uid,gid)
         elif instr_type=='warn':
-            tmpMes = weather.warning()
-            send_msg(tmpMes,uid,gid)
+            # 天气预警信息
+            warning_message = weather.warning()
+            send_msg(warning_message,uid,gid)
         
         # 约球
         elif instr_type=="soccer":
@@ -120,7 +128,7 @@ def handle_instrustion(message,uid,gid,role,message_id):
                 tmpMes = set_clock(message,"soccer",15)
                 send_msg(tmpMes,uid,gid)
             else:
-                send_msg("Sorry~没有权限哦",uid,gid)
+                send_msg(permission_msg,uid,gid)
         elif instr_type=="moyu":
             tmpMes = rand_pic.moyu_pic()
             send_msg(tmpMes,uid,gid)
@@ -178,8 +186,8 @@ def ai_funcs(instr_type,message,uid,gid=None,message_id=None):
 
         return send_msg(reply_content,uid,gid)
     except Exception as e:
-        dora_log.error(f"ai对话指令出错{e}")
-        return send_msg(str(e))
+        dora_log.error(f"ai对话指令出错:{e}")
+        return send_msg(str(e),uid,gid)
 
 def handle_common_msg(message,uid,gid,role,repeat_msg_dict={}):
     """
@@ -209,18 +217,18 @@ def handle_common_msg(message,uid,gid,role,repeat_msg_dict={}):
             msg_id = res.group(1)
             rawmsg = get_msg(msg_id).get("data").get("message")
             if rawmsg:
-                real_dora.shutUp(rawmsg)
+                dora_bot.shut_up(rawmsg)
                 send_msg(f"[CQ:reply,id={msg_id}] banned",uid,gid)
             return
 
         # 随机发言
-        tmpMes = real_dora.Mewo(message,uid,gid)
+        tmpMes = dora_bot.Mewo(message,uid,gid)
         if tmpMes != "SILENT":
             send_msg(tmpMes,uid,gid)
         return
     except Exception as e:
         dora_log.error(f"处理普通信息出错:{e}")
-        return
+        return "普通信息处理出错:{e}"
 
 def handle_repeat(message, uid, gid=None,repeat_msg_dict={}):
     """
@@ -300,16 +308,16 @@ def set_clock(message,type,offset=0):
         tmpa = f"0{a}" if a < 10 else str(a)
         tmpb = f"0{b}" if b < 10 else str(b)
 
-        if type in timing.TIMING_COF:
-            timing.TIMING_COF[type].update({
+        if type in timing.timing_config:
+            timing.timing_config[type].update({
                 "enable":True,
                 "hour":a,
-                "minus":b
+                "minute":b
             })
             return f"{type} updated: {tmpa}:{tmpb}"
         else:
             return "type not exist"
     except Exception as exc:
         dora_log.error(f"定时未知错误:{str(exc)}")
-        return '未知错误:' + str(exc)
+        return '定时未知错误:' + str(exc)
     
