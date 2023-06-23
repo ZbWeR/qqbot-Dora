@@ -78,7 +78,7 @@ def detail_forecast(pos=''):
             text = res[i].get('text')
             mes.append(f'{tmpTime}  {temp}℃ / {text}')
         updateTime = resJson.get('updateTime')[11:16] # 取出具体时间
-        return f'☁️  逐小时天气预报 🌞\n' + '地区:  {pos}\n' + \
+        return f'☁️  逐小时天气预报 🌞\n地区:  {pos}\n' + \
             '\n'.join(mes) + '\n更新时间: ' + updateTime
     except Exception as e:
         return str(e)

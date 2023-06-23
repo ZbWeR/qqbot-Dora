@@ -1,7 +1,7 @@
 import logging
 import time
 from logging.handlers import RotatingFileHandler
-from config import ROOT_ID
+import config
 
 class Logger:
     def __init__(self, name, level=logging.DEBUG, error_log_file='error.log', max_bytes=5 * 1024 * 1024, backup_count=5):
@@ -34,7 +34,7 @@ class Logger:
             now_time = int(time.time())
             if now_time - self.last_error_message[1]<=60:
                 from native_api import send_msg
-                send_msg(f"重复报错:\n{message}",ROOT_ID)
+                send_msg(f"重复报错:\n{message}",config.ROOT_ID,ban_flag=[False,True])
 
 
 # 测试

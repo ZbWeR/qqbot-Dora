@@ -63,8 +63,8 @@ class chatBot:
     def clear(self,uid,gid=None):
         # 清空消息缓存
         key = f"B{str(gid)}" if gid else f"A{str(uid)}"
-        preset = self.group_preset[key][0].get('content')
-        self.preset(preset,uid,gid)
+        preset_str = self.group_preset[key][0].get('content')
+        self.preset(preset_str,uid,gid)
 
     def init(self,uid,gid=None):
         # 格式化

@@ -5,8 +5,9 @@ from utils.logger import dora_log
 BASE_URL = 'http://127.0.0.1:5700/'
 NO_PROXY = { "http": None, "https": None}
 RECALL_FLAG = {} # 防撤回开关
+BAN_FLAG = [False]
 
-def send_msg(message,uid,gid=None):
+def send_msg(message,uid,gid=None,ban_flag=BAN_FLAG):
     """
     发送私聊/群聊消息
     
@@ -18,6 +19,12 @@ def send_msg(message,uid,gid=None):
     Returns:
         None
     """
+    # 自我禁言,避免发送大量报错信息
+    if ban_flag[0]:
+        return
+    if len(ban_flag) == 2:
+        BAN_FLAG[0] = ban_flag[1]
+
     encoded_message = parse.quote(message)
     if gid is not None:
         payload = f"{BASE_URL}send_msg?group_id={gid}&message={encoded_message}"
