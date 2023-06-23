@@ -30,7 +30,6 @@ class DoraLifeBot:
             print("Pinged your deployment. You successfully connected to MongoDB!")
         except Exception as e:
             dora_log.error(f"数据库连接失败:{e}")
-            print(e)
 
     def private_rules_check(self,ready_to_send):
         """
@@ -54,7 +53,7 @@ class DoraLifeBot:
         Args:
             msg: str, 未经处理的原始消息
             last_message: str, 上一次的原始消息
-            gid: str, 群聊编号
+            gid: int, 群聊编号
             now_keywords: str, msg经过分词后得到的关键词
             last_keywords: str, 上一次原始消息分词后得到的关键词
         """
@@ -109,7 +108,7 @@ class DoraLifeBot:
 
         Args:
             msg_keywords: str, 消息关键词
-            gid: str, 群组编号
+            gid: int, 群组编号
         """
         try:
             result = self.coll.find_one({"keywords":msg_keywords})
@@ -127,13 +126,11 @@ class DoraLifeBot:
                 img_name = re.search(r'file=(.*?).image',ready_to_send)
                 img_name = img_name.group(1) if img_name else '全栈安娜'
 
-                # print("回复:",ready_to_send)
                 # 在违禁词列表中找到 / 违反隐私策略
                 isForbiden = self.ban_list_coll.find_one({"$or":[
                         {"rawmsg":ready_to_send},
                         {"rawmsg": {"$regex": img_name, "$options": "i"}}
                     ]})
-                # print(isForbiden,img_name)
                 if isForbiden or self.private_rules_check(ready_to_send):
                     return "SILENT"
                 return ready_to_send
@@ -153,8 +150,6 @@ class DoraLifeBot:
         try:
             doc = {"rawmsg":rawmsg}
             result = self.ban_list_coll.insert_one(doc)
-            # print("-- shut_up --")
-            # print("添加违禁词:",result.acknowledged)
         except Exception as e:
             dora_log.error(f"添加违禁词时出错:{e}")
 

@@ -20,7 +20,7 @@ class chatBot:
         Args:
             mes: str,用户对话内容
             uid: str,用户qq号
-            gid: str,群聊id
+            gid: int,群聊id
         Returns:
             resp_cont: str, GPT回复
         """

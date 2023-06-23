@@ -1,9 +1,10 @@
 import os
-import sys
+import time
 from flask import Flask, request
 
+import api
 from utils import timing
-import api,native_api
+
 
 os.environ["HTTP_PROXY"] = "http://127.0.0.1:7890"
 os.environ["HTTPS_PROXY"] = "http://127.0.0.1:7890"
@@ -27,6 +28,7 @@ def post_data():
     elif post_type == 'notice':
         api.notice_handle(response_dict)
     return 'OK'
+
 
 if __name__ == '__main__':
     timing.run_clock()

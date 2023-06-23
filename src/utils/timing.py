@@ -21,7 +21,6 @@ def wea_clock(hour,minute):
         minute: str, current minute
     """
     if hour==wea_conf["hour"] and minute==wea_conf["minute"]:
-        # print("@@@@@@@@@@@@@")
         tmpMes = weather.brief_forecast()
         for group in wea_conf["groups"]:
             send_msg(tmpMes,self_uid,group)
@@ -46,7 +45,6 @@ def soccer_clock(hour,minute):
         minute: str, current minute
     """
     if hour==soccer_conf["hour"] and minute==soccer_conf["minute"]:
-        # print("@@@@@@@@@@@@@")
         tmpMes = "⚽  踢球！不过少爷生活！📢"
         for group in soccer_conf["groups"]:
             send_msg(tmpMes,self_uid,group)
@@ -60,7 +58,6 @@ def dora_mewo():
     mes = dora_bot.rand_talk()
     if mes != "SILENT":
         send_msg(mes,self_uid,wea_conf["groups"][pos])
-        # print("喵呜~" , wea_conf["groups"][pos],mes)
 
 def all_clock():
     """

@@ -1,6 +1,7 @@
 import requests
 import random
 from utils.logger import dora_log
+from utils.weather import NO_PROXY
 # from dora_log import dora_log
 
 def get_setu(num):
@@ -44,7 +45,7 @@ def get_normal_pic_1():
         'https://api.gmit.vip/Api/DmImg?format=json'
     ]
     try:
-        res = requests.get(url[random.randint(0,len(url)-1)]).json()
+        res = requests.get(url[random.randint(0,len(url)-1)],proxies=NO_PROXY).json()
         code = res.get('code')
         if code == '200':
             resUrl = res.get('data')['url']
@@ -60,7 +61,7 @@ def get_normal_pic_2():
         'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 Edg/114.0.1823.51'
     }
     try:    
-        res = requests.get(url,headers=headers)
+        res = requests.get(url,headers=headers,proxies=NO_PROXY)
         # 重定向历史中找到目标url
         loc = res.history[0].headers.get('Location')
         usefulloc = loc[loc.find('wallhaven'):]
@@ -79,25 +80,25 @@ def get_sexy_pic_1(num=1):
     """
     url = f"https://api.lolicon.app/setu/v2?num={num}"
     try:
-        res = requests.get(url).json()
+        res = requests.get(url,proxies=NO_PROXY).json()
         res_url = res.get('data')
         cont = [f"[CQ:image,file={generate_random_str()}.image,subType=0,url={item['urls']['original']}]" for item in res_url]
         return cont
     except Exception as e:
         dora_log.error(f"色图接口出错:{e}")
-        return '⚠️接口访问出错啦!'
+        return ['⚠️接口访问出错啦!']
 
 def get_sexy_pic_2(num=1):
     sorts = ['setu','pixiv','jitsu']
     url = f"https://moe.anosu.top/api?type=json&sort={sorts[random.randint(0,len(sorts)-1)]}&num={num}"
     try:
-        res = requests.get(url).json()
+        res = requests.get(url,proxies=NO_PROXY).json()
         res_url = res.get('pics')
         cont = [f"[CQ:image,file={generate_random_str()}.image,subType=0,url={item}]"for item in res_url]
         return cont
     except Exception as e:
         dora_log.error(f"色图接口出错:{e}")
-        return '⚠️接口访问出错啦!'
+        return ['⚠️接口访问出错啦!']
 
 def moyu_pic():
     """
@@ -105,7 +106,7 @@ def moyu_pic():
     """
     url = 'https://api.j4u.ink/v1/store/other/proxy/remote/moyu.json'
     try:
-        res = requests.get(url).json()
+        res = requests.get(url,proxies=NO_PROXY).json()
         resUrl = res["data"]["moyu_url"]
         return f'[CQ:image,file={generate_random_str()}.image,subType=0,url={resUrl}]'
     except Exception as e:

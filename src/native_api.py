@@ -1,10 +1,11 @@
 import requests
 from urllib import parse
 from utils.logger import dora_log
+from config import FUNC_ENABLE
 
 BASE_URL = 'http://127.0.0.1:5700/'
 NO_PROXY = { "http": None, "https": None}
-RECALL_FLAG = {} # 防撤回开关
+RECALL_FLAG = FUNC_ENABLE["withdraw"]
 BAN_FLAG = [False]
 
 def send_msg(message,uid,gid=None,ban_flag=BAN_FLAG):
@@ -66,13 +67,14 @@ def recall_msg(mid):
     Returns:
         boolean, 是否执行了防撤回操作
     """
+    global RECALL_FLAG
     message = get_msg(mid).get('data')
     if message is None:
         return
     gid = message.get('group_id')
     uid = message.get('sender').get('user_id')
     nickname = message.get('sender').get('nickname')
-    if gid in RECALL_FLAG and RECALL_FLAG[gid] == 1:
+    if gid in RECALL_FLAG:
         new_message = "不准撤回😡!\n{}:".format(nickname) + message.get('message').replace('不准撤回😡!\n', '')
         send_msg(new_message,uid,gid)
         return True

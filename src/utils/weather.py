@@ -5,7 +5,6 @@ from config import WEATHER_API_KEY
 LOCATION_ID = '101270107'
 # BASE_URL = 'https://devapi.qweather.com/v7/'
 BASE_URL = 'https://api.qweather.com/v7/'
-APIKEY = WEATHER_API_KEY
 NO_PROXY = {
     "http": None,
     "https": None,
@@ -20,7 +19,7 @@ def get_location_id(pos):
     Returns:
         location_id: str, 对应的地区编号
     """
-    url = f'https://geoapi.qweather.com/v2/city/lookup?location={pos}&key={APIKEY}'
+    url = f'https://geoapi.qweather.com/v2/city/lookup?location={pos}&key={WEATHER_API_KEY}'
     res = requests.get(url,proxies=NO_PROXY).json()
     if res.get('code')!='200':
         return str(res)
@@ -35,7 +34,7 @@ def brief_forecast():
     Returns:
         str, 简短的天气预报
     """
-    url = f'{BASE_URL}weather/3d?location={LOCATION_ID}&key={APIKEY}'
+    url = f'{BASE_URL}weather/3d?location={LOCATION_ID}&key={WEATHER_API_KEY}'
     res = requests.get(url,proxies=NO_PROXY).json().get('daily')[0]
     tmpMax = res.get('tempMax')
     tmpMin = res.get('tempMin')
@@ -63,12 +62,12 @@ def detail_forecast(pos=''):
             return loc
     try:
         # 获取实时天气
-        url = f'{BASE_URL}weather/now?location={loc}&key={APIKEY}'
+        url = f'{BASE_URL}weather/now?location={loc}&key={WEATHER_API_KEY}'
         res = requests.get(url,proxies=NO_PROXY).json().get('now')
         mes = []
         mes.append(f'当前：: {res["temp"]}℃ / {res["text"]}')
         # 获取逐小时预报
-        url = f'{BASE_URL}weather/24h?location={loc}&key={APIKEY}'
+        url = f'{BASE_URL}weather/24h?location={loc}&key={WEATHER_API_KEY}'
         resJson = requests.get(url,proxies=NO_PROXY).json()
         res = resJson.get('hourly')
         for i in range(6):
@@ -87,7 +86,7 @@ def warning():
     """
     获取天气预警信息
     """
-    url = f'{BASE_URL}warning/now?location={LOCATION_ID}&key={APIKEY}'
+    url = f'{BASE_URL}warning/now?location={LOCATION_ID}&key={WEATHER_API_KEY}'
     res = requests.get(url,proxies=NO_PROXY).json().get('warning')
     if not res:
         return 'No Warning'
