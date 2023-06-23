@@ -14,24 +14,32 @@ REAL_DORA_GROUP = [123,456,789]
 # 天气预报api私钥
 WEATHER_API_KEY = "<YOUR_API_KEY>"
 
-# 每日天气预报相关配置
-WEATHER_COF = {
-    "enable":True,
-    "hour":7,
-    "minus":0,
-    "groups":[
-        123,
-        456,
-        789
-    ],
+# 默认授权的群组
+AUTH_GROUPS = [123,456,789]
+
+# 功能函数开关
+FUNC_ENABLE = {
+    "setu":AUTH_GROUPS.copy(),
+    "ai-chat":AUTH_GROUPS.copy(),
+    "withdraw":[]
 }
-# 约球相关配置
-SOCCER_COF = {
-    "enable":False,
-    "hour":21,
-    "minus":0,
-    "groups":[
-        123,
-        456
-    ],
+# 定时设置
+timing_config = {
+    "weather":{
+        "enable":True,
+        "hour":7,
+        "minute":0,
+        "groups":[
+            123,
+        ]
+    },
+    "soccer":{
+        "enable":False,
+        "hour":21,
+        "minute":0,
+        "groups":[
+            123,
+            456
+        ]
+    }
 }

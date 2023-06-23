@@ -1,0 +1,16 @@
+{
+    "_id": ObjectId("6441692858ef153cc51774aa"),
+    "rawmsg": "脱了也热",
+    "keywords": "脱了也热",
+    "count": NumberInt("1"),
+    "answer": [
+        {
+            "keywords": "风扇",
+            "count": NumberInt("1"),
+            "groupid": NumberInt("18210**094"),
+            "rawmsg": [
+                "靠我的小风扇了"
+            ]
+        }
+    ]
+}
