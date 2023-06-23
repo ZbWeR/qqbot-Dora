@@ -1,7 +1,8 @@
 import re
 import random
+import time
 
-from config import ROOT_ID,SELF_ID
+from config import ROOT_ID,SELF_ID,FUNC_ENABLE
 from native_api import send_msg,RECALL_FLAG,get_msg,recall_msg
 from utils import weather, rand_pic,timing
 from utils.openai_chat import openai_chat
@@ -18,8 +19,8 @@ INSTR_LIST  = [
     '~chat        - 聊天'
 ]
 
-ROOT_ID = ROOT_ID
-SELF_ID = SELF_ID
+BOT_START_TIMESTAMP = time.time()
+MY_FUNC_ENABLE = FUNC_ENABLE
 
 def msg_handlers(data_dict):
     """
@@ -67,34 +68,52 @@ def handle_instrustion(message,uid,gid,role,message_id):
         instr_type = re.match(pattern,message).group(1)
         print(f"------{instr_type}----------")
 
+        global RECALL_FLAG
         # 帮助手册
         if instr_type =='help':
             tmpMes = '\n'.join(INSTR_LIST )
             send_msg(tmpMes,uid,gid)
 
+        # 权限授予
+        elif instr_type == 'grant':
+            if gid == None:
+                return send_msg("抱歉,该指令仅对群聊有效😭",uid,gid)
+            fun = message[7:]
+            fun_flag = MY_FUNC_ENABLE.get(fun)
+            if fun_flag is None:
+                return send_msg(errMsg,uid,gid)
+            if role == 'member':
+                return send_msg(permission_msg,uid,gid)
+            if gid not in fun_flag:
+                fun_flag.append(gid)
+                return send_msg(f'授权 {fun} 成功',uid,gid)
+            else:
+                return send_msg(f'{fun} 已授权',uid,gid)
+        # 权限收回
+        elif instr_type == 'revoke':
+            if gid == None:
+                return send_msg("抱歉,该指令仅对群聊有效😭",uid,gid)
+            fun = message[8:]
+            fun_flag = MY_FUNC_ENABLE.get(fun)
+            if fun_flag is None:
+                return send_msg(errMsg,uid,gid)
+            if role == 'member':
+                return send_msg(permission_msg,uid,gid)
+            if gid in fun_flag:
+                fun_flag.remove(gid)
+                return send_msg(f'权限 {fun} 收回',uid,gid)
+            else:
+                return send_msg(f'{fun} 已禁用',uid,gid)
+            
         # 返回指定内容
         elif instr_type =='return':
             tmpMes = message.replace('~return','').lstrip()
             send_msg(tmpMes,uid,gid)
 
-        # 防撤回
-        elif instr_type == 'wd':
-            if gid == None:
-                return send_msg("抱歉,该指令仅对群聊有效😭",uid,gid)
-            if role == 'member':
-                return send_msg(permission_msg,uid,gid)
-            if message[4:6]=='on':
-                send_msg("该群聊已开启防撤回功能",uid,gid)
-                RECALL_FLAG[gid] = 1
-            elif message[4:7]=='off':
-                if RECALL_FLAG.__contains__(gid):
-                    del RECALL_FLAG[gid]
-                send_msg("防撤回功能已关闭",uid,gid)
-            else:
-                send_msg(errMsg,uid,gid)
-
         # ai对话相关
         elif instr_type in ['chat','clear','preset','get','init']:
+            if gid not in MY_FUNC_ENABLE["ai-chat"]:
+                return send_msg("暂未授权",uid,gid)
             ai_funcs(instr_type,message,uid,gid,message_id)
 
         # 随机图片相关
@@ -102,6 +121,8 @@ def handle_instrustion(message,uid,gid,role,message_id):
             tmpMes = rand_pic.get_pic()
             send_msg(tmpMes,uid,gid) 
         elif instr_type =='setu':
+            if gid not in MY_FUNC_ENABLE["setu"]:
+                return send_msg("暂未授权",uid,gid)
             # TODO 批量色图存在发不出来的问题
             arr = message.split(' ')
             num = int(arr[1]) if len(arr) > 1 else 1
@@ -112,8 +133,8 @@ def handle_instrustion(message,uid,gid,role,message_id):
                 send_msg(item,uid,gid)
         
         # 功能信息
-        # elif instr_type =='status':
-        #     all_sta(uid,gid,repeat_msg_dict)
+        elif instr_type =='status':
+            all_sta(uid,gid)
         
         # 天气相关
         elif instr_type =='brief_forecast':
@@ -160,7 +181,7 @@ def ai_funcs(instr_type,message,uid,gid=None,message_id=None):
     Args:
         instr_type: str, 指令类型
         message: str, 消息内容,用于对话或预设
-        gid: str, 群聊编号
+        gid: int, 群聊编号
         message_id: str, 消息编号,用于回复
     Returns:
         send_msg: func, 发送回显消息
@@ -280,22 +301,26 @@ def handle_repeat(message, uid, gid=None,repeat_msg_dict={}):
         dora_log.error(f"复读出错:{e}")
         return False
 
-def all_sta(uid,gid=None,repeat_msg_dict={}):
+def all_sta(uid,gid=None):
     """
-    获取群组状态信息
+    获取机器人状态信息
 
     Args:
         uid: int, 指定用户的id
         gid: int, 群组id，默认为None
-        repeat_msg_dict: dict, 群组复读信息字典，默认为None
     """
+    now_timestamp = int(time.time()) - BOT_START_TIMESTAMP
+    days,seconds = divmod(now_timestamp,60*60*24)
+    hours,seconds = divmod(seconds,60*60)
+    tmpMes = f"  --- Dora ---\nUptime: {int(days)} days {int(hours)} hours\n"
     if gid is not None:
-        withdraw_status = 'On' if gid in RECALL_FLAG else 'off'
-        repeat_status = repeat_msg_dict.get(gid, 'None') if repeat_msg_dict else 'None'
-        weaTime = '{:0>2}:{:0>2}'.format(timing.weaCof["hour"],timing.weaCof["minus"])
-        
-        tmpMes = f"防撤回状态: {withdraw_status}\n复读信息: {repeat_status}\n预报时间: {weaTime}"
-        send_msg(tmpMes,uid,gid)
+        tmpMes += f"Funs:\n"
+        for fun,groups in MY_FUNC_ENABLE.items():
+            status = "enable" if gid in groups else "disable"
+            tmpMes += f" - {fun}: {status}\n"
+        wea_time = f'{timing.wea_conf["hour"]:0>2}:{timing.wea_conf["minute"]:0>2}'
+        tmpMes += f" - forecast: {wea_time}"
+    send_msg(tmpMes,uid,gid)
 
 def set_clock(message,type,offset=0):
     """
